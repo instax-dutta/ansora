@@ -13,7 +13,7 @@ export interface SeoPanelProps {
   faqCount: number;
 }
 
-function toneFor(score: number): { color: string; label: string } {
+export function toneFor(score: number): { color: string; label: string } {
   if (score >= 80) return { color: "#3e9a5b", label: "Excellent" };
   if (score >= 50) return { color: "#c98a1b", label: "Getting there" };
   return { color: "#b3402e", label: "Needs work" };

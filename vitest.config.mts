@@ -7,7 +7,11 @@ const srcDir = path.dirname(fileURLToPath(import.meta.url));
 export default defineConfig({
   test: {
     environment: "node",
-    include: ["src/**/*.test.ts"],
+    include: ["src/**/*.test.{ts,tsx}"],
+    setupFiles: ["src/test/setup.ts"],
+    // UI component tests opt into jsdom per-file with a
+    // `// @vitest-environment jsdom` docblock (Vitest 4 dropped
+    // environmentMatchGlobs); everything else stays in node.
   },
   resolve: {
     alias: {

@@ -220,7 +220,10 @@ src/
     markdown/       render pipeline config, TOC extractor, SEO scorer
     seo/            JSON-LD builders
 
-tests/              colocated *.test.ts next to the code they cover (vitest)
+tests/              colocated *.test.ts(x) next to the code they cover (vitest)
+                    UI component tests run in jsdom via a `// @vitest-environment jsdom` docblock
+                    Admin API routes are integration-tested end-to-end (real handlers,
+                    real JWT/validation; only the adapter + cookie store are mocked)
 ```
 
 ## Development

@@ -11,7 +11,7 @@
  * The form state lives in ImageDialogBody, which only mounts while the dialog
  * is open — so it resets naturally on every open (no setState-in-effect).
  */
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
 interface ImageDialogProps {
@@ -26,6 +26,17 @@ interface ImageDialogProps {
 }
 
 const URL_PATTERN = /^(https?:\/\/|\/|\.\/|\.\.\/)/i;
+
+/**
+ * URL validation state. The check preloads the URL as an image (the same way
+ * the browser renders it) rather than sending a HEAD request: cross-origin
+ * HEAD is CORS-blocked for most image hosts, and some hosts reject HEAD but
+ * serve GET images fine. "Valid" therefore means "will render for readers."
+ */
+type CheckState = "idle" | "checking" | "valid" | "invalid";
+
+/** Session-wide cache of check results — no repeated network hits per URL. */
+const urlCheckCache = new Map<string, "valid" | "invalid">();
 
 function altHint(alt: string, focusKeyword: string): {
   tone: "error" | "warn" | "ok";
@@ -74,6 +85,59 @@ function ImageDialogBody({
   const [alt, setAlt] = useState(initialAlt);
   const [title, setTitle] = useState("");
   const [imgError, setImgError] = useState(false);
+  const [checkState, setCheckState] = useState<CheckState>(() =>
+    initialUrl.trim() && URL_PATTERN.test(initialUrl.trim()) ? "checking" : "idle"
+  );
+  const [checkDims, setCheckDims] = useState("");
+  const [allowInvalid, setAllowInvalid] = useState(false);
+  const debounceRef = useRef<number>(0);
+  const checkTokenRef = useRef(0);
+
+  const runUrlCheck = useCallback((cleanUrl: string) => {
+    const token = ++checkTokenRef.current;
+    const img = new window.Image();
+    const finish = (result: "valid" | "invalid", dims = "") => {
+      if (token !== checkTokenRef.current) return; // a newer URL superseded us
+      urlCheckCache.set(cleanUrl, result);
+      setCheckState(result);
+      setCheckDims(dims);
+    };
+    const timeout = window.setTimeout(() => finish("invalid"), 8000);
+    img.onload = () => {
+      window.clearTimeout(timeout);
+      finish(
+        "valid",
+        img.naturalWidth ? `${img.naturalWidth}×${img.naturalHeight}` : ""
+      );
+    };
+    img.onerror = () => {
+      window.clearTimeout(timeout);
+      finish("invalid");
+    };
+    img.src = cleanUrl;
+  }, []);
+
+  const onUrlChange = (value: string) => {
+    setUrl(value);
+    setImgError(false); // a corrected URL should re-attempt preview
+    setAllowInvalid(false);
+    window.clearTimeout(debounceRef.current);
+    const cleanUrl = value.trim();
+    if (!cleanUrl || !URL_PATTERN.test(cleanUrl)) {
+      setCheckState("idle");
+      setCheckDims("");
+      return;
+    }
+    const cached = urlCheckCache.get(cleanUrl);
+    if (cached) {
+      setCheckState(cached);
+      setCheckDims("");
+      return;
+    }
+    setCheckState("checking");
+    setCheckDims("");
+    debounceRef.current = window.setTimeout(() => runUrlCheck(cleanUrl), 400);
+  };
 
   // Focus the URL field; restore focus to the trigger button on close.
   useEffect(() => {
@@ -126,13 +190,36 @@ function ImageDialogBody({
     };
   }, []);
 
+  // Validate the prefilled URL (from a text selection) on open. Schedules only
+  // — all state updates happen inside the async check callbacks.
+  useEffect(() => {
+    const cleanUrl = initialUrl.trim();
+    if (!cleanUrl || !URL_PATTERN.test(cleanUrl)) return;
+    debounceRef.current = window.setTimeout(() => {
+      const cached = urlCheckCache.get(cleanUrl);
+      if (cached) setCheckState(cached);
+      else runUrlCheck(cleanUrl);
+    }, 0);
+    return () => window.clearTimeout(debounceRef.current);
+  }, [initialUrl, runUrlCheck]);
+
+  // Cancel pending checks on unmount so late callbacks are ignored.
+  useEffect(
+    () => () => {
+      window.clearTimeout(debounceRef.current);
+      checkTokenRef.current += 1;
+    },
+    []
+  );
+
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
     const cleanUrl = url.trim();
     if (!cleanUrl || !URL_PATTERN.test(cleanUrl)) return;
+    if (checkState === "invalid" && !allowInvalid) return; // also gated by the button
     onInsert(
       cleanUrl,
-      alt.replace(/[\]]/g, " ").replace(/\s+/g, " ").trim(),
+      alt.replace(/[\[\]]/g, " ").replace(/\s+/g, " ").trim(),
       title.trim().replace(/"/g, "'")
     );
     onClose();
@@ -182,7 +269,9 @@ function ImageDialogBody({
           </button>
         </div>
 
-        <form onSubmit={submit} className="space-y-4 px-5 py-4">
+        {/* noValidate: the URL field is type=url and would otherwise block
+            relative paths via native constraint validation. */}
+        <form onSubmit={submit} noValidate className="space-y-4 px-5 py-4">
           <p id="image-dialog-desc" className="text-xs leading-relaxed text-ink-muted">
             Inserts Markdown at the cursor. Images are hosted externally — paste a
             public URL.
@@ -198,16 +287,38 @@ function ImageDialogBody({
               ref={urlRef}
               type="url"
               value={url}
-              onChange={(e) => {
-                setUrl(e.target.value);
-                setImgError(false); // a corrected URL should re-attempt preview
-              }}
+              onChange={(e) => onUrlChange(e.target.value)}
               placeholder="https://example.com/photo.jpg"
               className="w-full rounded-lg border border-line bg-paper px-3 py-2 text-sm text-ink outline-none transition-colors placeholder:text-ink-muted/60 focus:border-brand"
             />
             {url.trim() && !urlValid && (
               <p className="mt-1 text-xs text-brand">
                 URL must start with http(s):// or a /-relative path.
+              </p>
+            )}
+            {checkState === "checking" && (
+              <p role="status" className="mt-1 flex items-center gap-1.5 text-xs text-ink-muted">
+                <svg viewBox="0 0 24 24" className="h-3 w-3 animate-spin" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+                  <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+                </svg>
+                Checking URL…
+              </p>
+            )}
+            {checkState === "valid" && (
+              <p role="status" className="mt-1 text-xs text-ink-muted">
+                ✓ Loads as an image{checkDims ? ` (${checkDims})` : ""}.
+              </p>
+            )}
+            {checkState === "invalid" && (
+              <p role="status" className="mt-1 flex flex-wrap items-center gap-x-2 text-xs text-brand">
+                <span>⚠ Couldn’t load this image — check the URL or host.</span>
+                <button
+                  type="button"
+                  onClick={() => setAllowInvalid(true)}
+                  className="underline decoration-dotted underline-offset-2 transition-colors hover:text-brand-strong"
+                >
+                  Insert anyway
+                </button>
               </p>
             )}
           </div>
@@ -289,10 +400,15 @@ function ImageDialogBody({
             </button>
             <button
               type="submit"
-              disabled={!url.trim() || !urlValid}
+              disabled={
+                !url.trim() ||
+                !urlValid ||
+                checkState === "checking" ||
+                (checkState === "invalid" && !allowInvalid)
+              }
               className="rounded-lg bg-brand px-4 py-2 text-sm font-semibold text-on-brand transition-colors hover:bg-brand-strong disabled:opacity-50"
             >
-              Insert image
+              {checkState === "checking" ? "Checking…" : "Insert image"}
             </button>
           </div>
         </form>
