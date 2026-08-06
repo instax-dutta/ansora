@@ -1,0 +1,234 @@
+@import "tailwindcss";
+@plugin "@tailwindcss/typography";
+
+/* Class-based dark mode: toggled by the theme script in the root layout. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ---------------------------------------------------------------------------
+   Warm personal palette — runtime-switchable via CSS variables so the
+   light/dark toggle works without recompiling utilities.
+   --------------------------------------------------------------------------- */
+:root {
+  --paper: #faf6f0;
+  --surface: #ffffff;
+  --surface-soft: #f4ede2;
+  --ink: #2a241c;
+  --ink-muted: #6e6558;
+  --line: #e8dfd2;
+  --line-strong: #d9cdbb;
+  --brand: #b04e14;
+  --brand-strong: #8f3c0d;
+  --brand-soft: #f6e7db;
+  --on-brand: #fffaf4;
+  color-scheme: light;
+}
+
+.dark {
+  --paper: #16120e;
+  --surface: #201a14;
+  --surface-soft: #282117;
+  --ink: #ede6da;
+  --ink-muted: #a89e8e;
+  --line: #3a3126;
+  --line-strong: #4a3e2f;
+  --brand: #e08151;
+  --brand-strong: #f0a06f;
+  --brand-soft: #3a2416;
+  --on-brand: #1c1109;
+  color-scheme: dark;
+}
+
+/* Static accent scale (usable anywhere, not theme-swapped). */
+@theme {
+  --color-brand-50: #fdf3ec;
+  --color-brand-100: #fae5d8;
+  --color-brand-200: #f4c9b0;
+  --color-brand-300: #eba77f;
+  --color-brand-400: #e08151;
+  --color-brand-500: #d4622f;
+  --color-brand-600: #b04e14;
+  --color-brand-700: #8f3c0d;
+  --color-brand-800: #6f321c;
+  --color-brand-900: #542718;
+  --color-brand-950: #2e150c;
+}
+
+/* Live theme tokens -> utility classes (bg-paper, text-ink, border-line, …) */
+@theme inline {
+  --color-paper: var(--paper);
+  --color-surface: var(--surface);
+  --color-surface-soft: var(--surface-soft);
+  --color-ink: var(--ink);
+  --color-ink-muted: var(--ink-muted);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-brand: var(--brand);
+  --color-brand-strong: var(--brand-strong);
+  --color-brand-soft: var(--brand-soft);
+  --color-on-brand: var(--on-brand);
+
+  --font-sans: var(--font-figtree), ui-sans-serif, system-ui, sans-serif;
+  --font-serif: var(--font-fraunces), ui-serif, Georgia, serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, "SF Mono", monospace;
+}
+
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+::selection {
+  background: var(--brand-soft);
+  color: var(--ink);
+}
+
+:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+/* ---------------------------------------------------------------------------
+   Article prose — warm ink on cream, serif display headings.
+   --------------------------------------------------------------------------- */
+.prose-warm {
+  --tw-prose-body: #4a4236;
+  --tw-prose-headings: #241e16;
+  --tw-prose-lead: #4a4236;
+  --tw-prose-links: var(--brand);
+  --tw-prose-bold: #241e16;
+  --tw-prose-counters: #8a7f6e;
+  --tw-prose-bullets: #c8bba6;
+  --tw-prose-hr: var(--line);
+  --tw-prose-quotes: #4a4236;
+  --tw-prose-quote-borders: #e3c9b4;
+  --tw-prose-captions: #6e6558;
+  --tw-prose-code: #a33e0b;
+  --tw-prose-pre-code: #ede6da;
+  --tw-prose-pre-bg: transparent;
+  --tw-prose-th-borders: var(--line-strong);
+  --tw-prose-td-borders: var(--line);
+}
+
+.dark .prose-warm {
+  --tw-prose-body: #cdc4b4;
+  --tw-prose-headings: #f2ece1;
+  --tw-prose-lead: #cdc4b4;
+  --tw-prose-links: var(--brand);
+  --tw-prose-bold: #f2ece1;
+  --tw-prose-counters: #9a8f7d;
+  --tw-prose-bullets: #6e6252;
+  --tw-prose-hr: var(--line);
+  --tw-prose-quotes: #cdc4b4;
+  --tw-prose-quote-borders: #4a3e2f;
+  --tw-prose-captions: #a89e8e;
+  --tw-prose-code: #f0a878;
+  --tw-prose-pre-code: #ede6da;
+  --tw-prose-pre-bg: transparent;
+  --tw-prose-th-borders: var(--line-strong);
+  --tw-prose-td-borders: var(--line);
+}
+
+.prose-warm h1,
+.prose-warm h2,
+.prose-warm h3,
+.prose-warm h4 {
+  font-family: var(--font-fraunces), ui-serif, Georgia, serif;
+  letter-spacing: -0.015em;
+}
+
+/* Inline code — keep fenced blocks untouched (shiki owns those). */
+.prose-warm :not(pre) > code {
+  background: #f3e9dc;
+  border-radius: 0.375rem;
+  padding: 0.125rem 0.35rem;
+  font-weight: 500;
+  font-size: 0.85em;
+}
+
+.dark .prose-warm :not(pre) > code {
+  background: #2a211a;
+}
+
+/* Fenced code blocks (styled by rehype-pretty-code / shiki). */
+.prose-warm pre {
+  border-radius: 0.75rem;
+  border: 1px solid var(--line);
+}
+
+.prose-warm pre code {
+  background: transparent;
+  padding: 0;
+  font-weight: 400;
+}
+
+/* Heading anchor links added by rehype-autolink-headings. */
+.prose-warm .heading-anchor {
+  color: var(--brand);
+  text-decoration: none;
+  opacity: 0;
+  margin-inline-start: 0.3em;
+  font-weight: 600;
+  transition: opacity 0.15s ease;
+}
+
+.prose-warm h2:hover .heading-anchor,
+.prose-warm h3:hover .heading-anchor,
+.prose-warm h4:hover .heading-anchor {
+  opacity: 1;
+}
+
+/* Tables from GFM need a scroll container; the Markdown component adds one. */
+.prose-warm table {
+  display: block;
+  width: max-content;
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+/* Smooth micro-interactions used across the UI. */
+@media (prefers-reduced-motion: no-preference) {
+  .animate-fade-up {
+    animation: fade-up 0.4s ease both;
+  }
+
+  .animate-modal-in {
+    animation: modal-in 0.18s ease both;
+  }
+
+  .animate-backdrop-in {
+    animation: backdrop-in 0.18s ease both;
+  }
+}
+
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes modal-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes backdrop-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}

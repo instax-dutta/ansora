@@ -1,0 +1,23 @@
+services:
+  ansora:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      # Content lives on local disk inside the container + a git repo.
+      DEPLOYMENT_MODE: self-hosted
+      # REQUIRED: generate with `npm run hash-password`
+      ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
+      ADMIN_PASSWORD_HASH: ${ADMIN_PASSWORD_HASH:?Set ADMIN_PASSWORD_HASH in your .env}
+      # REQUIRED: long random string, e.g. `openssl rand -base64 48`
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in your .env}
+      # Public base URL of the blog
+      SITE_URL: ${SITE_URL:-http://localhost:3000}
+      # Directory inside the container that holds /posts + site.config.json
+      CONTENT_DIR: /app/content
+      # Optional: push content commits to a remote after every save
+      GIT_AUTO_PUSH: ${GIT_AUTO_PUSH:-false}
+    volumes:
+      # Posts + site config live here and survive container rebuilds.
+      - ./content:/app/content
+    restart: unless-stopped

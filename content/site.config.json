@@ -1,0 +1,12 @@
+{
+  "title": "Ansora",
+  "description": "A quiet corner of the web — self-hosted blogging about writing, Markdown, and building for the open web.",
+  "baseUrl": "http://localhost:3000",
+  "author": "The Ansora Author",
+  "defaultOgImage": "",
+  "social": {
+    "twitter": "",
+    "github": "https://github.com",
+    "linkedin": ""
+  }
+}
