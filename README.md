@@ -1,6 +1,9 @@
 # Ansora
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
+[![CI](https://github.com/instax-dutta/ansora/actions/workflows/ci.yml/badge.svg)](https://github.com/instax-dutta/ansora/actions/workflows/ci.yml)
+[![Docker](https://img.shields.io/badge/docker-ghcr.io/instax--dutta/ansora-blue?logo=docker)](https://github.com/instax-dutta/ansora/pkgs/container/ansora)
+[![Deploy on Railway](https://railway.com/button.svg)](https://railway.app/new/template?template=https%3A%2F%2Fgithub.com%2Finstax-dutta%2Fansora)
 
 A self-hostable, serverless-deployable blogging platform where **every post is a
 markdown file and every save is a git commit.**
@@ -25,6 +28,7 @@ at runtime by a single environment variable.
 [![Deploy to Netlify](https://www.netlify.com/img/deploy/button.svg)](https://app.netlify.com/start/deploy?repository=https://github.com/instax-dutta/ansora)
 [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository=https://github.com/instax-dutta/ansora)
 [![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/instax-dutta/ansora)
+[![Deploy on Railway](https://railway.com/button.svg)](https://railway.app/new/template?template=https%3A%2F%2Fgithub.com%2Finstax-dutta%2Fansora)
 
 Pick a platform, click, and fill in the three required env vars
 (`ADMIN_USERNAME`, `ADMIN_PASSWORD_HASH`, `JWT_SECRET`) during setup. Netlify and
@@ -103,6 +107,15 @@ Environment variables for Vercel: all of those below.
 
 ### 3. Self-hosted with Docker
 
+A pre-built image is published to GitHub Container Registry on every push to
+`main`:
+
+```bash
+docker pull ghcr.io/instax-dutta/ansora:latest
+```
+
+Or build from source:
+
 ```bash
 # 1. Prepare a .env next to docker-compose.yml
 cp .env.example .env
@@ -119,6 +132,7 @@ docker compose up -d --build
 - Want off-box backups? Point the mounted repo at a remote and set `GIT_AUTO_PUSH=true`.
 - The Docker image uses Next.js standalone output — the runtime is a single
   small `server.js`, no Node modules bloat in the final layer.
+- All published image tags are available on [GitHub Packages](https://github.com/instax-dutta/ansora/pkgs/container/ansora).
 
 ### 4. Render (one-click Docker)
 
@@ -127,9 +141,16 @@ builds the same Dockerfile with a persistent 1 GB disk mounted at `/app/content`
 After the first deploy, set `ADMIN_USERNAME`, `ADMIN_PASSWORD_HASH`, `JWT_SECRET`
 and `SITE_URL` in the Render dashboard (they're intentionally not baked in).
 
-> Render's free tier puts web services to sleep after ~15 min of inactivity;
-> the first visit after a nap takes a few seconds to wake up. For always-on,
-> use a VPS with Docker instead.
+### 5. Railway (one-click Docker)
+
+Use the [Deploy on Railway button](#one-click-deploy) — the `railway.json` config
+builds the same Dockerfile with zero configuration. Railway detects the three
+required env vars (`ADMIN_USERNAME`, `ADMIN_PASSWORD_HASH`, `JWT_SECRET`) from
+the `.env.example` file and prompts you to fill them in during setup.
+
+> Railway's free tier includes $5 of monthly credits (~$0.02/hr for the
+> cheapest plan), enough to run this app continuously for ~250 hours per month.
+> No credit card is required to sign up.
 
 ---
 
