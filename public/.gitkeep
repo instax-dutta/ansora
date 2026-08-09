@@ -1,0 +1,3 @@
+# Keep this directory tracked by git — the Dockerfile copies /app/public
+# into the standalone runtime, and git does not track empty directories.
+# Add static assets (favicon, robots.txt overrides, etc.) here.

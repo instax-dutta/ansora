@@ -59,7 +59,7 @@ doesn't: you already own the files.
 
 ## Try it in 5 minutes
 
-Prereqs: Node.js 20.9+ and git.
+Prereqs: Node.js 22.22+ and git.
 
 ```bash
 # 1. Install
