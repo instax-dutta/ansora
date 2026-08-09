@@ -3,7 +3,6 @@
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
 [![CI](https://github.com/instax-dutta/ansora/actions/workflows/ci.yml/badge.svg)](https://github.com/instax-dutta/ansora/actions/workflows/ci.yml)
 [![Docker](https://img.shields.io/badge/docker-ghcr.io/instax--dutta/ansora-blue?logo=docker)](https://github.com/instax-dutta/ansora/pkgs/container/ansora)
-[![Deploy on Railway](https://railway.com/button.svg)](https://railway.app/new/template?template=https%3A%2F%2Fgithub.com%2Finstax-dutta%2Fansora)
 
 **Own your words. Publish anywhere. Keep them forever.**
 
@@ -82,10 +81,14 @@ you type.
 
 ## Deploy in one click
 
-[![Deploy to Netlify](https://www.netlify.com/img/deploy/button.svg)](https://app.netlify.com/start/deploy?repository=https://github.com/instax-dutta/ansora)
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository=https://github.com/instax-dutta/ansora)
-[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/instax-dutta/ansora)
-[![Deploy on Railway](https://railway.com/button.svg)](https://railway.app/new/template?template=https%3A%2F%2Fgithub.com%2Finstax-dutta%2Fansora)
+<div align="center">
+
+<a href="https://app.netlify.com/start/deploy?repository=https://github.com/instax-dutta/ansora"><img alt="Deploy to Netlify" src="https://www.netlify.com/img/deploy/button.svg" height="40" /></a>&nbsp;&nbsp;
+<a href="https://vercel.com/new/clone?repository=https://github.com/instax-dutta/ansora"><img alt="Deploy to Vercel" src="https://vercel.com/button" height="40" /></a>&nbsp;&nbsp;
+<a href="https://render.com/deploy?repo=https://github.com/instax-dutta/ansora"><img alt="Deploy to Render" src="https://render.com/images/deploy-to-render-button.svg" height="40" /></a>&nbsp;&nbsp;
+<a href="https://railway.app/new/template?template=https%3A%2F%2Fgithub.com%2Finstax-dutta%2Fansora"><img alt="Deploy to Railway" src="https://railway.com/button.svg" height="40" /></a>
+
+</div>
 
 Pick a platform, click, and fill in the three required env vars
 (`ADMIN_USERNAME`, `ADMIN_PASSWORD_HASH`, `JWT_SECRET`) during setup. Netlify
@@ -208,7 +211,7 @@ and `SITE_URL` in the Render dashboard (they're intentionally not baked in).
 
 ### 5. Railway (one-click Docker)
 
-Use the [Deploy on Railway button](#deploy-in-one-click) — the `railway.json` config
+Use the [Deploy to Railway button](#deploy-in-one-click) — the `railway.json` config
 builds the same Dockerfile with zero configuration. Railway detects the three
 required env vars (`ADMIN_USERNAME`, `ADMIN_PASSWORD_HASH`, `JWT_SECRET`) from
 the `.env.example` file and prompts you to fill them in during setup.
