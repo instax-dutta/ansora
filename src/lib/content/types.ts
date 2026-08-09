@@ -108,6 +108,27 @@ export function serializeFrontmatter(meta: PostMeta): Record<string, unknown> {
 
 /* ------------------------------ Site config ------------------------------- */
 
+/**
+ * Visual theme: one of the curated presets in src/lib/theme.ts, plus admin
+ * overrides. `accent` is a hex color ("" = use the preset's brand color);
+ * `radius` controls the global corner-radius scale; `headingFont` picks the
+ * display font for headings. Applied site-wide via injected CSS variables.
+ */
+export const themeConfigSchema = z.object({
+  preset: z.enum(["warm", "ocean", "forest", "midnight"]).default("warm"),
+  accent: z.string().default(""),
+  radius: z.enum(["sharp", "soft", "rounded"]).default("soft"),
+  headingFont: z.enum(["serif", "sans"]).default("serif"),
+});
+export type ThemeConfig = z.infer<typeof themeConfigSchema>;
+
+export const DEFAULT_THEME_CONFIG: ThemeConfig = {
+  preset: "warm",
+  accent: "",
+  radius: "soft",
+  headingFont: "serif",
+};
+
 export const siteConfigSchema = z.object({
   title: z.string().default("Ansora"),
   description: z.string().default("A quiet, self-hosted blog."),
@@ -122,6 +143,7 @@ export const siteConfigSchema = z.object({
       linkedin: z.string().default(""),
     })
     .default({ twitter: "", github: "", linkedin: "" }),
+  theme: themeConfigSchema.default(DEFAULT_THEME_CONFIG),
 });
 export type SiteConfig = z.infer<typeof siteConfigSchema>;
 
@@ -132,4 +154,5 @@ export const DEFAULT_SITE_CONFIG: SiteConfig = {
   author: "Ansora Author",
   defaultOgImage: "",
   social: { twitter: "", github: "", linkedin: "" },
+  theme: DEFAULT_THEME_CONFIG,
 };

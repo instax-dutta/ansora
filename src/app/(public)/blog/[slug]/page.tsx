@@ -97,7 +97,7 @@ export default async function BlogPostPage({
                   <a
                     key={tag}
                     href={`/tags/${tag}`}
-                    className="rounded-full bg-brand-soft px-2.5 py-0.5 text-xs font-medium text-brand-strong transition-colors hover:bg-brand-200 dark:hover:bg-brand-900"
+                    className="rounded-full bg-brand-soft px-2.5 py-0.5 text-xs font-medium text-brand-strong transition-colors hover:bg-brand/15 dark:hover:bg-brand/25"
                   >
                     {tag}
                   </a>

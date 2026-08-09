@@ -2,6 +2,34 @@
   "name": "ansora",
   "version": "0.1.0",
   "private": true,
+  "description": "Self-hostable, serverless-deployable blogging platform — every post is a Markdown file, every save is a git commit. No database, no SaaS CMS.",
+  "keywords": [
+    "blog",
+    "cms",
+    "markdown",
+    "self-hosted",
+    "nextjs",
+    "seo",
+    "aeo",
+    "netlify",
+    "vercel",
+    "docker",
+    "blogging",
+    "headless-cms",
+    "serverless",
+    "static-site-generator",
+    "jamstack",
+    "typescript",
+    "tailwindcss"
+  ],
+  "license": "MIT",
+  "engines": {
+    "node": ">=20.9.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/instax-dutta/ansora.git"
+  },
   "scripts": {
     "dev": "next dev",
     "build": "next build",

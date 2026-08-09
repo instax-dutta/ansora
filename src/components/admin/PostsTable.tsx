@@ -148,7 +148,7 @@ export function PostsTable({ initialPosts }: { initialPosts: PostMeta[] }) {
       </div>
 
       {error && (
-        <p role="alert" className="rounded-lg border border-brand-300 bg-brand-soft px-3 py-2 text-sm text-brand-strong">
+        <p role="alert" className="rounded-lg border border-brand/30 bg-brand-soft px-3 py-2 text-sm text-brand-strong">
           {error}
         </p>
       )}

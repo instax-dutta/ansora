@@ -1,7 +1,13 @@
 # Ansora
 
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
+
 A self-hostable, serverless-deployable blogging platform where **every post is a
 markdown file and every save is a git commit.**
+
+Powerful enough for professionals, simple enough for everyone else — a real CMS
+feel (live split-pane editor, on-page SEO/AEO scoring, admin panel) without the
+enterprise price tag, a database, or vendor lock-in.
 
 No database. No SaaS CMS. No lock-in. One codebase that runs identically on a
 VPS, Vercel, or Netlify — only the content *storage adapter* differs, selected
@@ -10,8 +16,20 @@ at runtime by a single environment variable.
 - **Content as files** — posts live in `content/posts/*.md` with YAML frontmatter.
 - **Version-controlled by design** — every save in the admin editor is a real git commit (locally, or to GitHub).
 - **Strong SEO/AEO defaults** — JSON-LD `BlogPosting` + `FAQPage` schema, RSS, sitemap, robots.txt, `llms.txt`, canonical URLs, Open Graph/Twitter cards, and a real on-page SEO/AEO scorer in the editor.
+- **Fully re-skinable** — three curated visual styles (Warm, Ocean, Forest) with admin-tunable accent color, corner radius, and heading font, per-site from Settings → Appearance.
 - **Single admin, no user table** — credentials come from environment variables (`ADMIN_USERNAME` + `ADMIN_PASSWORD_HASH`, a bcrypt hash).
 - **Open source** — MIT.
+
+## One-click deploy
+
+[![Deploy to Netlify](https://www.netlify.com/img/deploy/button.svg)](https://app.netlify.com/start/deploy?repository=https://github.com/instax-dutta/ansora)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository=https://github.com/instax-dutta/ansora)
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/instax-dutta/ansora)
+
+Pick a platform, click, and fill in the three required env vars
+(`ADMIN_USERNAME`, `ADMIN_PASSWORD_HASH`, `JWT_SECRET`) during setup. Netlify and
+Vercel store your content in a GitHub repo; Render runs the Docker image with a
+persistent disk. Full instructions and the env-var table are below.
 
 ---
 
@@ -65,7 +83,7 @@ updating.
 
 ### 1. Vercel
 
-1. Push this repo to GitHub and import it in Vercel.
+1. Push this repo to GitHub and import it in Vercel (or use the [one-click deploy button](#one-click-deploy)).
 2. Set the environment variables (below), including `DEPLOYMENT_MODE=serverless`.
 3. Set up a **deploy hook**:
    - Vercel → Project → **Settings → Git → Deploy Hooks** → create one (e.g. named `content`).
@@ -77,10 +95,11 @@ Environment variables for Vercel: all of those below.
 
 ### 2. Netlify
 
-1. Push the repo to GitHub and import it in Netlify (build command `npm run build`, output `.next`).
+1. Push the repo to GitHub and import it in Netlify (or use the [one-click deploy button](#one-click-deploy)).
 2. Set the environment variables, including `DEPLOYMENT_MODE=serverless`.
 3. Netlify → **Site configuration → Build & deploy → Continuous deployment → Build hooks** → create a hook.
 4. Add the hook URL as a GitHub webhook on the content repo (push event), same as Vercel above.
+5. Point a custom domain (or subdomain) at the site and let Netlify issue the SSL certificate.
 
 ### 3. Self-hosted with Docker
 
@@ -100,6 +119,17 @@ docker compose up -d --build
 - Want off-box backups? Point the mounted repo at a remote and set `GIT_AUTO_PUSH=true`.
 - The Docker image uses Next.js standalone output — the runtime is a single
   small `server.js`, no Node modules bloat in the final layer.
+
+### 4. Render (one-click Docker)
+
+Use the [Deploy to Render button](#one-click-deploy) — the `render.yaml` blueprint
+builds the same Dockerfile with a persistent 1 GB disk mounted at `/app/content`.
+After the first deploy, set `ADMIN_USERNAME`, `ADMIN_PASSWORD_HASH`, `JWT_SECRET`
+and `SITE_URL` in the Render dashboard (they're intentionally not baked in).
+
+> Render's free tier puts web services to sleep after ~15 min of inactivity;
+> the first visit after a nap takes a few seconds to wake up. For always-on,
+> use a VPS with Docker instead.
 
 ---
 
@@ -204,7 +234,7 @@ endpoint is rate-limited with a basic in-memory throttle):
 - **Editor** — split-pane Markdown editor with toolbar shortcuts, live preview
   through the *same* render pipeline as the public site, frontmatter sidebar,
   FAQ repeater, and autosave (debounced ~3s — every save is a git commit).
-- **Settings** — site title/description/base URL/social links, stored in `content/site.config.json`.
+- **Settings** — site title/description/base URL/social links, plus **Appearance** (visual style preset, accent color, corner radius, heading font) — all stored in `content/site.config.json`.
 
 ## Project structure
 

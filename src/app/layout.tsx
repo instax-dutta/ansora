@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Figtree, Fraunces, Geist_Mono } from "next/font/google";
 import { getSiteConfig } from "@/lib/site-config";
+import { buildThemeCss } from "@/lib/theme";
+import { DEFAULT_SITE_CONFIG } from "@/lib/content/types";
 import "./globals.css";
 
 const figtree = Figtree({
@@ -48,17 +50,28 @@ export async function generateMetadata(): Promise<Metadata> {
 // Apply the saved/preferred theme before first paint to avoid a flash.
 const themeInitScript = `try{var t=localStorage.getItem('ansora-theme');if(t==='dark'||(!t&&window.matchMedia('(prefers-color-scheme: dark)').matches))document.documentElement.classList.add('dark')}catch(e){}`;
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  // The site config carries the visual theme; the rendered style block
+  // re-skins the whole app (public + admin) from the content repo's
+  // site.config.json. `html:root` / `html.dark` selectors (see buildThemeCss)
+  // outrank globals.css defaults, so this wins regardless of sheet order.
+  // If content is unreachable at build/prerender time (e.g. serverless mode
+  // without creds in a dev environment), fall back to the default theme so a
+  // style block never fails the build — live requests use the real config.
+  const config = await getSiteConfig().catch(() => DEFAULT_SITE_CONFIG);
+  const themeCss = buildThemeCss(config.theme);
+
   return (
     <html
       lang="en"
       className={`${figtree.variable} ${fraunces.variable} ${geistMono.variable}`}
     >
       <body className="min-h-dvh bg-paper font-sans text-ink antialiased">
+        <style>{themeCss}</style>
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
         {children}
       </body>

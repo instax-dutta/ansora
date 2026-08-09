@@ -1,0 +1,40 @@
+# ---------------------------------------------------------------------------
+# Render blueprint — one-click deploy of the Docker/self-hosted path.
+#
+# Builds the Dockerfile, keeps posts + site config on a persistent disk at
+# /app/content, and wires the same env vars as docker-compose.yml.
+#
+# After the first deploy, open the service → Environment and set the
+# "sync: false" values:
+#   ADMIN_USERNAME          your admin login
+#   ADMIN_PASSWORD_HASH     `npm run hash-password`
+#   JWT_SECRET              `openssl rand -base64 48`
+#   SITE_URL                https://yourblog.example.com
+# ---------------------------------------------------------------------------
+services:
+  - type: web
+    name: ansora
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    autoDeploy: true
+    healthCheckPath: /
+    envVars:
+      - key: DEPLOYMENT_MODE
+        value: self-hosted
+      - key: GIT_AUTO_PUSH
+        value: "false"
+      - key: NEXT_TELEMETRY_DISABLED
+        value: "1"
+      - key: ADMIN_USERNAME
+        sync: false
+      - key: ADMIN_PASSWORD_HASH
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: SITE_URL
+        sync: false
+    disk:
+      name: ansora-content
+      mountPath: /app/content
+      sizeGB: 1

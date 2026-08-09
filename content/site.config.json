@@ -8,5 +8,11 @@
     "twitter": "",
     "github": "https://github.com",
     "linkedin": ""
+  },
+  "theme": {
+    "preset": "warm",
+    "accent": "",
+    "radius": "soft",
+    "headingFont": "serif"
   }
 }
