@@ -45,3 +45,6 @@ next-env.d.ts
 # when running self-hosted with an external content repo, the content
 # directory becomes its own git repository — don't nest it in this repo.
 /content/.git/
+
+# brag video output (generated, not source)
+/brag-output/
