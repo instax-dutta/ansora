@@ -5,39 +5,59 @@
 [![Docker](https://img.shields.io/badge/docker-ghcr.io/instax--dutta/ansora-blue?logo=docker)](https://github.com/instax-dutta/ansora/pkgs/container/ansora)
 [![Deploy on Railway](https://railway.com/button.svg)](https://railway.app/new/template?template=https%3A%2F%2Fgithub.com%2Finstax-dutta%2Fansora)
 
-A self-hostable, serverless-deployable blogging platform where **every post is a
-markdown file and every save is a git commit.**
+**Own your words. Publish anywhere. Keep them forever.**
 
-Powerful enough for professionals, simple enough for everyone else — a real CMS
-feel (live split-pane editor, on-page SEO/AEO scoring, admin panel) without the
-enterprise price tag, a database, or vendor lock-in.
-
-No database. No SaaS CMS. No lock-in. One codebase that runs identically on a
-VPS, Vercel, or Netlify — only the content *storage adapter* differs, selected
-at runtime by a single environment variable.
-
-- **Content as files** — posts live in `content/posts/*.md` with YAML frontmatter.
-- **Version-controlled by design** — every save in the admin editor is a real git commit (locally, or to GitHub).
-- **Strong SEO/AEO defaults** — JSON-LD `BlogPosting` + `FAQPage` schema, RSS, sitemap, robots.txt, `llms.txt`, canonical URLs, Open Graph/Twitter cards, and a real on-page SEO/AEO scorer in the editor.
-- **Fully re-skinable** — three curated visual styles (Warm, Ocean, Forest) with admin-tunable accent color, corner radius, and heading font, per-site from Settings → Appearance.
-- **Single admin, no user table** — credentials come from environment variables (`ADMIN_USERNAME` + `ADMIN_PASSWORD_HASH`, a bcrypt hash).
-- **Open source** — MIT.
-
-## One-click deploy
-
-[![Deploy to Netlify](https://www.netlify.com/img/deploy/button.svg)](https://app.netlify.com/start/deploy?repository=https://github.com/instax-dutta/ansora)
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository=https://github.com/instax-dutta/ansora)
-[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/instax-dutta/ansora)
-[![Deploy on Railway](https://railway.com/button.svg)](https://railway.app/new/template?template=https%3A%2F%2Fgithub.com%2Finstax-dutta%2Fansora)
-
-Pick a platform, click, and fill in the three required env vars
-(`ADMIN_USERNAME`, `ADMIN_PASSWORD_HASH`, `JWT_SECRET`) during setup. Netlify and
-Vercel store your content in a GitHub repo; Render runs the Docker image with a
-persistent disk. Full instructions and the env-var table are below.
+Ansora is a self-hostable, serverless-deployable blogging platform where every
+post is a markdown file and every save is a git commit. No database. No SaaS
+bill. No lock-in.
 
 ---
 
-## 5-minute quickstart
+## Why Ansora
+
+Blogging software forces an uncomfortable choice:
+
+| | **Professional** | **Free** |
+|---|---|---|
+| The promise | Powerful, polished, full-featured | Simple, approachable, zero cost |
+| The catch | Per-seat pricing, complexity to run, and your content often lives behind an export button | You don't own your design, your domain, or your traffic — and the platform can change the rules |
+
+Ansora sits deliberately in between. It **feels** like professional software —
+a split-pane editor, a real-time SEO/AEO scorer, curated themes — yet it stays
+simple enough for a non-technical person to run. And it's free, open source,
+and yours.
+
+**Your words outlive the platform.** Markdown has outlived every blogging
+platform ever made. In Ansora, posts are plain `.md` files inside a git
+repository — no proprietary format, no export button required. Read them, edit
+them, back them up with any tool on Earth. If a platform ever dies, your blog
+doesn't: you already own the files.
+
+---
+
+## What makes it different
+
+- **Looks like you hired a designer.** Four curated visual styles — Warm,
+  Ocean, Forest, Midnight — plus a tunable accent color, corner radius, and
+  heading font. Re-skin the entire site from Settings → Appearance. No code,
+  no rebuild.
+- **Ranks like you hired an SEO.** JSON-LD `BlogPosting` + `FAQPage` schema,
+  RSS, sitemap, `robots.txt`, `llms.txt` (the AI-crawler index), canonical
+  URLs, Open Graph/Twitter cards — and a live 0–100 SEO/AEO scorer that grades
+  your post as you write.
+- **Feels like a real CMS.** Split-pane Markdown editor with live preview,
+  autosave, FAQ builder, tags, and a publish toggle. Every save is a real git
+  commit — versioned, backed up, reversible.
+- **Simple enough for non-techies.** One admin login. A settings page. A big
+  "Publish" switch. No database, no user tables, no command line required
+  after setup.
+- **Runs anywhere, lock-in nowhere.** One codebase deploys to Vercel, Netlify,
+  Render, Railway, Docker, or your own VPS — the only thing that differs is
+  where your content is stored.
+
+---
+
+## Try it in 5 minutes
 
 Prereqs: Node.js 20.9+ and git.
 
@@ -46,23 +66,38 @@ Prereqs: Node.js 20.9+ and git.
 npm install
 
 # 2. Configure the admin account
-npm run hash-password        # generates a bcrypt hash for ADMIN_PASSWORD_HASH
+npm run hash-password        # creates a bcrypt hash for ADMIN_PASSWORD_HASH
 cp .env.example .env.local   # then fill in ADMIN_USERNAME, ADMIN_PASSWORD_HASH, JWT_SECRET
 # JWT_SECRET: openssl rand -base64 48
 
 # 3. Run
 npm run dev                  # http://localhost:3000
-
-# 4. Log in at http://localhost:3000/admin (username + password from step 2)
 ```
 
-You're done. Three example posts are included (`content/posts/`), one of which
-is a draft so you can see how drafts behave. Try the split-pane editor and watch
-the SEO score tick as you write.
+Log in at **http://localhost:3000/admin** and you're live. Three example posts
+ship with the repo — write in the editor and watch the SEO score tick up as
+you type.
 
 ---
 
-## Which mode should I use?
+## Deploy in one click
+
+[![Deploy to Netlify](https://www.netlify.com/img/deploy/button.svg)](https://app.netlify.com/start/deploy?repository=https://github.com/instax-dutta/ansora)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository=https://github.com/instax-dutta/ansora)
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/instax-dutta/ansora)
+[![Deploy on Railway](https://railway.com/button.svg)](https://railway.app/new/template?template=https%3A%2F%2Fgithub.com%2Finstax-dutta%2Fansora)
+
+Pick a platform, click, and fill in the three required env vars
+(`ADMIN_USERNAME`, `ADMIN_PASSWORD_HASH`, `JWT_SECRET`) during setup. Netlify
+and Vercel store your content in a GitHub repo; Render and Railway run the
+Docker image. Full instructions and the env-var table are below.
+
+---
+
+## One decision: self-hosted or serverless
+
+Everything else in Ansora is identical between modes — only *where* content is
+stored changes.
 
 | | **Self-hosted** (`DEPLOYMENT_MODE=self-hosted`) | **Serverless** (`DEPLOYMENT_MODE=serverless`) |
 |---|---|---|
@@ -78,16 +113,13 @@ to a host, and have a VPS or a spare machine.
 maintain and can tolerate a short delay between publishing and the public site
 updating.
 
-> Both modes share every feature. Only the storage adapter differs, and nothing
-> else in the codebase branches on the mode.
-
 ---
 
 ## Deployment
 
 ### 1. Vercel
 
-1. Push this repo to GitHub and import it in Vercel (or use the [one-click deploy button](#one-click-deploy)).
+1. Push this repo to GitHub and import it in Vercel (or use the [one-click deploy button](#deploy-in-one-click)).
 2. Set the environment variables (below), including `DEPLOYMENT_MODE=serverless`.
 3. Set up a **deploy hook**:
    - Vercel → Project → **Settings → Git → Deploy Hooks** → create one (e.g. named `content`).
@@ -99,7 +131,7 @@ Environment variables for Vercel: all of those below.
 
 ### 2. Netlify
 
-1. Push the repo to GitHub and import it in Netlify (or use the [one-click deploy button](#one-click-deploy)).
+1. Push the repo to GitHub and import it in Netlify (or use the [one-click deploy button](#deploy-in-one-click)).
 2. Set the environment variables, including `DEPLOYMENT_MODE=serverless`.
 3. Netlify → **Site configuration → Build & deploy → Continuous deployment → Build hooks** → create a hook.
 4. Add the hook URL as a GitHub webhook on the content repo (push event), same as Vercel above.
@@ -114,7 +146,40 @@ A pre-built image is published to GitHub Container Registry on every push to
 docker pull ghcr.io/instax-dutta/ansora:latest
 ```
 
-Or build from source:
+#### Run with Docker Compose (pre-built image)
+
+Point a `docker-compose.yml` at the published image instead of building from
+source — no clone needed. The image's standalone server reads `PORT`/`HOSTNAME`
+from the environment, so the compose file only supplies env vars and the
+content volume:
+
+```yaml
+services:
+  ansora:
+    image: ghcr.io/instax-dutta/ansora:latest
+    ports:
+      - "3000:3000"
+    environment:
+      DEPLOYMENT_MODE: self-hosted
+      # Generate with `npm run hash-password`
+      ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
+      ADMIN_PASSWORD_HASH: ${ADMIN_PASSWORD_HASH:?Set ADMIN_PASSWORD_HASH in your .env}
+      # Long random string, e.g. `openssl rand -base64 48`
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in your .env}
+      SITE_URL: ${SITE_URL:-http://localhost:3000}
+      CONTENT_DIR: /app/content
+      GIT_AUTO_PUSH: ${GIT_AUTO_PUSH:-false}
+    volumes:
+      - ./content:/app/content
+    restart: unless-stopped
+```
+
+```bash
+cp .env.example .env   # set ADMIN_PASSWORD_HASH and JWT_SECRET
+docker compose up -d    # pulls the image on first run
+```
+
+#### Build from source
 
 ```bash
 # 1. Prepare a .env next to docker-compose.yml
@@ -136,14 +201,14 @@ docker compose up -d --build
 
 ### 4. Render (one-click Docker)
 
-Use the [Deploy to Render button](#one-click-deploy) — the `render.yaml` blueprint
+Use the [Deploy to Render button](#deploy-in-one-click) — the `render.yaml` blueprint
 builds the same Dockerfile with a persistent 1 GB disk mounted at `/app/content`.
 After the first deploy, set `ADMIN_USERNAME`, `ADMIN_PASSWORD_HASH`, `JWT_SECRET`
 and `SITE_URL` in the Render dashboard (they're intentionally not baked in).
 
 ### 5. Railway (one-click Docker)
 
-Use the [Deploy on Railway button](#one-click-deploy) — the `railway.json` config
+Use the [Deploy on Railway button](#deploy-in-one-click) — the `railway.json` config
 builds the same Dockerfile with zero configuration. Railway detects the three
 required env vars (`ADMIN_USERNAME`, `ADMIN_PASSWORD_HASH`, `JWT_SECRET`) from
 the `.env.example` file and prompts you to fill them in during setup.
