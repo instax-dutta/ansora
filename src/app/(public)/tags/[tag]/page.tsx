@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { PostCard } from "@/components/PostCard";
-import { getAdapter } from "@/lib/content";
+import { safeListPosts } from "@/lib/content";
 import { getSiteConfig } from "@/lib/site-config";
 
 export const revalidate = 300;
@@ -28,7 +28,7 @@ export default async function TagPage({
 }) {
   const { tag } = await params;
   const [posts, config] = await Promise.all([
-    getAdapter().listPosts(),
+    safeListPosts(),
     getSiteConfig(),
   ]);
   const tagged = posts.filter((p) => p.published && p.tags.includes(tag));

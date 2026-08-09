@@ -245,7 +245,7 @@ npm run verify-serverless  # end-to-end harness against a scratch GitHub repo
 
 ## 13. Known edges & gotchas
 
-- **Serverless build needs creds**: `generateMetadata` in the root layout calls `getSiteConfig()` at prerender; without `GITHUB_REPO`/`GITHUB_TOKEN` a serverless build fails (`/_not-found` is prerendered). The layout *body* falls back to the default theme, but metadata does not — keep env vars set before building.
+- **Graceful reads, loud writes**: public read surfaces never hard-fail when the content adapter is unreachable. `getSiteConfig()` falls back to `DEFAULT_SITE_CONFIG` and `safeListPosts()` returns `[]` (both log a `console.warn`) — so a serverless-mode build without `GITHUB_REPO`/`GITHUB_TOKEN` still succeeds, and transient adapter errors render an empty-but-live site instead of a 500. Admin/API **write** paths (and admin reads) still surface adapter errors loudly. Tests: `src/lib/content/resilience.test.ts`.
 - **Caches are per-instance**: `getSiteConfig()` (30 s TTL) and the GitHub adapter's 60 s TTL caches live in module memory. In serverless, instances can briefly disagree; admin writes invalidate only the local instance.
 - **Login throttle is per-instance** in serverless — a soft rate limit by design, documented in `session.ts`.
 - **Fresh content repos**: the GitHub adapter warns and treats a branch with no commits as empty — a brand-new repo before the first save will look empty (expected).

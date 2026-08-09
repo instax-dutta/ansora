@@ -55,6 +55,26 @@ export function getAdapter(): ContentAdapter {
   return cachedAdapter;
 }
 
+/**
+ * Read-only list for public surfaces (home, tags, sitemap, feeds). Never
+ * throws: if the adapter is unreachable (e.g. a serverless build without
+ * GITHUB_REPO/GITHUB_TOKEN, or a transient API error) it returns [] so pages
+ * and prerenders degrade gracefully instead of 500ing or failing the build.
+ * Admin/API write paths still surface adapter errors loudly.
+ */
+export async function safeListPosts(): Promise<PostMeta[]> {
+  try {
+    return await getAdapter().listPosts();
+  } catch (err) {
+    // Mirrors the getSiteConfig() fallback: public surfaces degrade to empty
+    // rather than 500ing or failing a prerender, but the failure is logged so
+    // it stays diagnosable (e.g. a transient GitHub API error would otherwise
+    // silently show "Nothing published yet").
+    console.warn("[content] listPosts unavailable — serving empty post list:", err);
+    return [];
+  }
+}
+
 /** Re-export the model types for convenience. */
 export type { Post, PostMeta, SiteConfig } from "./types";
 export { DEFAULT_SITE_CONFIG } from "./types";

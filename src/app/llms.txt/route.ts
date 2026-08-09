@@ -1,4 +1,4 @@
-import { getAdapter } from "@/lib/content";
+import { safeListPosts } from "@/lib/content";
 import { getSiteConfig } from "@/lib/site-config";
 import { stripMarkdown } from "@/lib/utils";
 
@@ -7,8 +7,10 @@ import { stripMarkdown } from "@/lib/utils";
  * giving AI crawlers and answer engines a clean, structured map of the blog.
  */
 export async function GET() {
+  // Degrade to a title-only index if the content adapter is unreachable (e.g.
+  // a serverless build without GITHUB_REPO/GITHUB_TOKEN) — never fail a build.
   const [posts, config] = await Promise.all([
-    getAdapter().listPosts(),
+    safeListPosts(),
     getSiteConfig(),
   ]);
   const baseUrl = config.baseUrl.replace(/\/+$/, "");

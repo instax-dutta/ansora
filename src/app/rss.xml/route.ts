@@ -1,10 +1,13 @@
-import { getAdapter } from "@/lib/content";
+import { safeListPosts } from "@/lib/content";
 import { getSiteConfig } from "@/lib/site-config";
 import { escapeXml, stripMarkdown, toRfc2822 } from "@/lib/utils";
 
 export async function GET() {
+  // Degrade to an empty feed if the content adapter is unreachable (e.g. a
+  // serverless build without GITHUB_REPO/GITHUB_TOKEN) — an empty RSS feed
+  // beats failing the build or serving a 500.
   const [posts, config] = await Promise.all([
-    getAdapter().listPosts(),
+    safeListPosts(),
     getSiteConfig(),
   ]);
   const baseUrl = config.baseUrl.replace(/\/+$/, "");

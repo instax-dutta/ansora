@@ -1,10 +1,13 @@
 import type { MetadataRoute } from "next";
-import { getAdapter } from "@/lib/content";
+import { safeListPosts } from "@/lib/content";
 import { getSiteConfig } from "@/lib/site-config";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  // Degrade to a minimal sitemap if the content adapter is unreachable
+  // (e.g. a serverless build without GITHUB_REPO/GITHUB_TOKEN) — never fail
+  // the build or serve a broken 500 for a sitemap.
   const [posts, config] = await Promise.all([
-    getAdapter().listPosts(),
+    safeListPosts(),
     getSiteConfig(),
   ]);
   const baseUrl = config.baseUrl.replace(/\/+$/, "");

@@ -1,10 +1,10 @@
 import Link from "next/link";
-import { getAdapter } from "@/lib/content";
+import { safeListPosts } from "@/lib/content";
 
 export const dynamic = "force-dynamic";
 
 export default async function TagsIndexPage() {
-  const posts = (await getAdapter().listPosts()).filter((p) => p.published);
+  const posts = (await safeListPosts()).filter((p) => p.published);
 
   const counts = new Map<string, number>();
   for (const post of posts) {

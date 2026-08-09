@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { Figtree, Fraunces, Geist_Mono } from "next/font/google";
 import { getSiteConfig } from "@/lib/site-config";
 import { buildThemeCss } from "@/lib/theme";
-import { DEFAULT_SITE_CONFIG } from "@/lib/content/types";
 import "./globals.css";
 
 const figtree = Figtree({
@@ -24,6 +23,9 @@ const geistMono = Geist_Mono({
 });
 
 export async function generateMetadata(): Promise<Metadata> {
+  // getSiteConfig() degrades to DEFAULT_SITE_CONFIG when the content
+  // adapter is unreachable (see lib/site-config.ts), so prerendering and
+  // metadata never fail a build; live requests use the real config.
   const config = await getSiteConfig();
   const baseUrl = config.baseUrl.replace(/\/+$/, "");
   return {
@@ -59,10 +61,10 @@ export default async function RootLayout({
   // re-skins the whole app (public + admin) from the content repo's
   // site.config.json. `html:root` / `html.dark` selectors (see buildThemeCss)
   // outrank globals.css defaults, so this wins regardless of sheet order.
-  // If content is unreachable at build/prerender time (e.g. serverless mode
-  // without creds in a dev environment), fall back to the default theme so a
-  // style block never fails the build — live requests use the real config.
-  const config = await getSiteConfig().catch(() => DEFAULT_SITE_CONFIG);
+  // getSiteConfig() degrades to DEFAULT_SITE_CONFIG when the content
+  // adapter is unreachable, so the style block never fails a build — live
+  // requests use the real config.
+  const config = await getSiteConfig();
   const themeCss = buildThemeCss(config.theme);
 
   return (

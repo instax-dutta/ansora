@@ -1,8 +1,7 @@
 import { Pagination } from "@/components/Pagination";
 import { PostCard } from "@/components/PostCard";
-import { getAdapter } from "@/lib/content";
+import { safeListPosts } from "@/lib/content";
 import { getSiteConfig } from "@/lib/site-config";
-
 
 const PAGE_SIZE = 9;
 
@@ -15,7 +14,7 @@ export default async function HomePage({
   const page = Math.max(1, parseInt(pageParam ?? "1", 10) || 1);
 
   const [posts, config] = await Promise.all([
-    getAdapter().listPosts(),
+    safeListPosts(),
     getSiteConfig(),
   ]);
   const published = posts.filter((p) => p.published);
