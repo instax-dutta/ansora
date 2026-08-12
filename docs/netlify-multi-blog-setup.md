@@ -16,7 +16,7 @@ Ansora is **one codebase that can be deployed N times.** It has no database — 
 | **Admin login** | Env vars `ADMIN_USERNAME` + `ADMIN_PASSWORD_HASH` | **Different credentials per site** |
 | **Theme** | Visual style preset + accent/radius/font, stored in `site.config.json` | **Different look per site** |
 
-The adapter (`DEPLOYMENT_MODE=serverless`) reads/writes the content repo over the GitHub API, so a save in the admin panel = a real commit on GitHub = your family's posts are version-controlled, backed up, and reversible for free.
+The adapter (`DEPLOYMENT_MODE=serverless`) reads/writes the content repo over the GitHub API, so a save in the admin panel = a real commit on GitHub = your blog posts are version-controlled, backed up, and reversible for free.
 
 ---
 
@@ -24,11 +24,11 @@ The adapter (`DEPLOYMENT_MODE=serverless`) reads/writes the content repo over th
 
 | Blog | Domain | Owner | Content repo | Visual style |
 |---|---|---|---|---|
-| **Personal** | `blogs.sdad.pro` | You | `you/personal-content` | Your preferred theme + accent |
-| **Brother-in-law** | `blogs.numbervibes.in` | Him | `you/numbervibes-content` | His preferred theme + accent |
-| **Sister** | `note.sdad.pro` (any subdomain) | Her | `you/sister-content` | Her preferred theme + accent |
+| **Main Blog** | `blog.yourdomain.com` | You | `you/main-blog-content` | Your preferred theme + accent |
+| **Tech Blog** | `tech.yourdomain.com` | Contributor A | `you/tech-blog-content` | Their preferred theme + accent |
+| **Notes / Micro** | `notes.yourdomain.com` | Contributor B | `you/notes-blog-content` | Their preferred theme + accent |
 
-Each content repo gets its own **fine-grained GitHub token** and its own **Netlify build hook**, so each person's edits can *only* touch their own repo — never anyone else's.
+Each content repo gets its own **fine-grained GitHub token** and its own **Netlify build hook**, so each site's edits can *only* touch its own repo — never any other's.
 
 ---
 
@@ -52,9 +52,9 @@ You need your own copy of Ansora on GitHub:
 
 On GitHub, create three **empty** repositories (no README, no .gitignore, no license):
 
-- `personal-content`
-- `numbervibes-content`
-- `sister-content`
+- `main-blog-content`
+- `tech-blog-content`
+- `notes-blog-content`
 
 In each one, create the following folder structure with an example post:
 
@@ -96,7 +96,7 @@ A minimal `content/site.config.json`:
 }
 ```
 
-> **Tip:** For your sister's single-post blog, just create one post. She only needs `content/posts/` with a single `.md` file.
+> **Tip:** For a single-post or micro blog, just create one post. It only needs `content/posts/` with a single `.md` file.
 
 ---
 
@@ -108,7 +108,7 @@ GitHub → Settings → **Developer settings** → **Fine-grained tokens** → *
 
 | Field | Value |
 |---|---|
-| **Token name** | e.g. `ansora-personal-content` |
+| **Token name** | e.g. `ansora-main-blog-content` |
 | **Repository access** | **Only select repositories** → pick ONE content repo |
 | **Permissions → Contents** | **Read and write** (Metadata: read comes automatically) |
 
@@ -134,15 +134,15 @@ For each blog, create a separate Netlify site:
 
 4. **Show advanced** → **Environment variables** — add these for **each** site:
 
-| Variable | Your site | BIL's site | Sister's site |
+| Variable | Site A (Main) | Site B (Tech) | Site C (Notes) |
 |---|---|---|---|
 | `DEPLOYMENT_MODE` | `serverless` | `serverless` | `serverless` |
-| `ADMIN_USERNAME` | `you` | `bil-username` | `sister-username` |
-| `ADMIN_PASSWORD_HASH` | *(your bcrypt hash)* | *(his bcrypt hash)* | *(her bcrypt hash)* |
-| `JWT_SECRET` | *(≥32 char random)* | *(different ≥32 char random)* | *(different ≥32 char random)* |
-| `SITE_URL` | `https://blogs.sdad.pro` | `https://blogs.numbervibes.in` | `https://note.sdad.pro` |
-| `GITHUB_REPO` | `you/personal-content` | `you/numbervibes-content` | `you/sister-content` |
-| `GITHUB_TOKEN` | *(token for personal)* | *(token for numbervibes)* | *(token for sister)* |
+| `ADMIN_USERNAME` | `admin-a` | `admin-b` | `admin-c` |
+| `ADMIN_PASSWORD_HASH` | *(bcrypt hash A)* | *(bcrypt hash B)* | *(bcrypt hash C)* |
+| `JWT_SECRET` | *(≥32 char random A)* | *(≥32 char random B)* | *(≥32 char random C)* |
+| `SITE_URL` | `https://blog.yourdomain.com` | `https://tech.yourdomain.com` | `https://notes.yourdomain.com` |
+| `GITHUB_REPO` | `you/main-blog-content` | `you/tech-blog-content` | `you/notes-blog-content` |
+| `GITHUB_TOKEN` | *(token for blog A)* | *(token for blog B)* | *(token for blog C)* |
 | `GITHUB_BRANCH` | `main` | `main` | `main` |
 | `NEXT_TELEMETRY_DISABLED` | `1` | `1` | `1` |
 
@@ -183,19 +183,19 @@ Repeat for all three site/repo pairs. Now every edit triggers a rebuild (~1–2 
 For each Netlify site:
 
 1. Go to **Site configuration** → **Domain management** → **Add custom domain**
-2. Enter the subdomain (e.g. `blogs.sdad.pro`, `blogs.numbervibes.in`, `note.sdad.pro`)
+2. Enter the subdomain (e.g. `blog.yourdomain.com`, `tech.yourdomain.com`, `notes.yourdomain.com`)
 3. Netlify will prompt you to add a DNS record:
-   - For subdomains (`blogs.sdad.pro`): create a **CNAME** record pointing `blogs` → `your-site.netlify.app`
-   - For apex domains (e.g. `numbervibes.in` without subdomain): use a Netlify-managed DNS or an ALIAS/ANAME record
+   - For subdomains (`blog.yourdomain.com`): create a **CNAME** record pointing `blog` → `your-site.netlify.app`
+   - For apex domains (e.g. `yourdomain.com` without subdomain): use a Netlify-managed DNS or an ALIAS/ANAME record
 4. Netlify provisions an SSL certificate automatically (Let's Encrypt)
 
 **DNS records summary:**
 
 | Domain | Type | Name | Value |
 |---|---|---|---|
-| `sdad.pro` | CNAME | `blogs` | `personal-site.netlify.app` |
-| `sdad.pro` | CNAME | `note` | `sister-site.netlify.app` |
-| `numbervibes.in` | CNAME | `blogs` | `bil-site.netlify.app` |
+| `yourdomain.com` | CNAME | `blog` | `site-a.netlify.app` |
+| `yourdomain.com` | CNAME | `tech` | `site-b.netlify.app` |
+| `yourdomain.com` | CNAME | `notes` | `site-c.netlify.app` |
 
 Make sure `SITE_URL` in each site's env vars matches the custom domain exactly (with `https://`).
 
@@ -207,9 +207,9 @@ Once deployed, each blog's admin panel is at `https://<their-domain>/admin`.
 
 | Blog | Admin URL | Login |
 |---|---|---|
-| Personal | `https://blogs.sdad.pro/admin` | Your username + password |
-| Brother-in-law | `https://blogs.numbervibes.in/admin` | His username + password |
-| Sister | `https://note.sdad.pro/admin` | Her username + password |
+| Main Blog | `https://blog.yourdomain.com/admin` | Site A username + password |
+| Tech Blog | `https://tech.yourdomain.com/admin` | Site B username + password |
+| Notes Blog | `https://notes.yourdomain.com/admin` | Site C username + password |
 
 **Walkthrough for each person:**
 
@@ -235,9 +235,9 @@ Each blog has its own `site.config.json` in its content repo, so each can look c
 
 | Blog | Suggested theme |
 |---|---|
-| **Personal** | Warm (terracotta + cream paper) or your own brand colors |
-| **Brother-in-law** | Forest (earthy greens) or a custom accent matching his brand |
-| **Sister** | Midnight (navy + warm gold) or Ocean (cool slate + teal) |
+| **Main Blog** | Warm (terracotta + cream paper) or your own brand colors |
+| **Tech Blog** | Forest (earthy greens) or a custom accent matching the brand |
+| **Notes Blog** | Midnight (navy + warm gold) or Ocean (cool slate + teal) |
 
 Each blog's theme is independent — changing one never affects the others.
 
@@ -268,18 +268,19 @@ Each blog's theme is independent — changing one never affects the others.
               ▼                   ▼                   ▼
      ┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐
      │ Netlify:         │ │ Netlify:         │ │ Netlify:         │
-     │ blogs.sdad.pro   │ │ blogs.number     │ │ note.sdad.pro    │
-     │                  │ │ vibes.in         │ │                  │
+     │ blog.domain.com  │ │ tech.domain.com  │ │ notes.domain.com │
+     │                  │ │                  │ │                  │
      │ Env:             │ │ Env:             │ │ Env:             │
      │  GITHUB_REPO=    │ │  GITHUB_REPO=    │ │  GITHUB_REPO=    │
-     │  you/personal    │ │  you/numbervibes │ │  you/sister      │
+     │  you/main-blog   │ │  you/tech-blog   │ │  you/notes-blog  │
+     │  -content        │ │  -content        │ │  -content        │
      │  SITE_URL=...    │ │  SITE_URL=...    │ │  SITE_URL=...    │
      └────────┬─────────┘ └────────┬─────────┘ └────────┬─────────┘
               │                    │                    │
               ▼                    ▼                    ▼
      ┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐
      │ GitHub content   │ │ GitHub content   │ │ GitHub content   │
-     │ repo: personal   │ │ repo: numbervibes│ │ repo: sister     │
+     │ repo: main-blog  │ │ repo: tech-blog  │ │ repo: notes-blog │
      │ -content         │ │ -content         │ │ -content         │
      │                  │ │                  │ │                  │
      │ Token: scoped    │ │ Token: scoped    │ │ Token: scoped    │
@@ -312,8 +313,8 @@ Yes. Each Netlify site has its own `ADMIN_USERNAME` and `ADMIN_PASSWORD_HASH` en
 **Q: Can each blog look different?**
 Absolutely. The theme (preset, accent color, radius, heading font) is stored in each content repo's `site.config.json`, so each blog can have a completely independent visual style.
 
-**Q: What if my sister only wants a single post?**
-Create one `.md` file in her content repo. The blog will render it as a single post. The homepage shows one post card, the post page shows the full article, and the archive/tags will be minimal. Perfect for a simple "about me" or announcement page.
+**Q: What if I only want a single-post or micro blog?**
+Create one `.md` file in the content repo. The blog will render it as a single post. The homepage shows one post card, the post page shows the full article, and the archive/tags will be minimal. Perfect for a simple "about me" or announcement page.
 
 **Q: Can I add more blogs later?**
 Yes. Repeat Steps 2–6 for each new blog. Each gets its own content repo, token, Netlify site, and subdomain.
@@ -324,7 +325,7 @@ Netlify's free tier includes:
 - **300 build minutes** per site per month
 - Each build takes ~1–2 minutes, so you get ~150–300 rebuilds per site per month
 - Adding a new post triggers one build. Editing existing content also triggers one.
-- For low-volume personal/family blogs, this is plenty. If you post daily, you'll well within the limit.
+- For low-volume personal or team blogs, this is plenty. If you post daily, you'll stay well within the limit.
 
 ---
 
