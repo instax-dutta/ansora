@@ -188,7 +188,7 @@ export function SettingsForm({ initial }: { initial: SiteConfig }) {
             onClick={() =>
               setConfig((prev) => ({
                 ...prev,
-                theme: { preset: "warm", accent: "", radius: "soft", headingFont: "serif" },
+                theme: { preset: "warm", accent: "", radius: THEME_PRESETS.warm.radius, headingFont: THEME_PRESETS.warm.headingFont },
               }))
             }
             className="rounded-lg px-2.5 py-1 text-xs font-medium text-ink-muted transition-colors hover:bg-surface-soft hover:text-ink"
@@ -204,7 +204,7 @@ export function SettingsForm({ initial }: { initial: SiteConfig }) {
         {/* Preset picker */}
         <div>
           <span className="mb-1.5 block text-sm font-medium text-ink">Style preset</span>
-          <div className="grid gap-2 sm:grid-cols-3">
+            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
             {(Object.keys(THEME_PRESETS) as ThemePreset[]).map((id) => {
               const def = THEME_PRESETS[id];
               const selected = config.theme.preset === id;
@@ -214,7 +214,7 @@ export function SettingsForm({ initial }: { initial: SiteConfig }) {
                   key={id}
                   type="button"
                   aria-pressed={selected}
-                  onClick={() => setTheme({ preset: id, accent: "" })}
+                  onClick={() => setTheme({ preset: id, accent: "", radius: def.radius, headingFont: def.headingFont })}
                   className={`group rounded-xl border p-3 text-left transition-all ${
                     selected
                       ? "border-brand ring-1 ring-brand"

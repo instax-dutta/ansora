@@ -43,7 +43,18 @@ describe("color helpers", () => {
 describe("presets", () => {
   it("defines all four presets with full light+dark palettes", () => {
     const ids = Object.keys(THEME_PRESETS);
-    expect(ids.sort()).toEqual(["forest", "midnight", "ocean", "warm"]);
+    expect(ids.sort()).toEqual([
+      "claude",
+      "claude-dark",
+      "forest",
+      "midnight",
+      "minimax",
+      "minimax-dark",
+      "ocean",
+      "opencode",
+      "opencode-dark",
+      "warm",
+    ]);
     for (const id of ids) {
       const preset = THEME_PRESETS[id as keyof typeof THEME_PRESETS];
       expect(Object.keys(preset.light)).toHaveLength(11);

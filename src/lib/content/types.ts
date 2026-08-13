@@ -115,7 +115,18 @@ export function serializeFrontmatter(meta: PostMeta): Record<string, unknown> {
  * display font for headings. Applied site-wide via injected CSS variables.
  */
 export const themeConfigSchema = z.object({
-  preset: z.enum(["warm", "ocean", "forest", "midnight"]).default("warm"),
+  preset: z.enum([
+    "warm",
+    "ocean",
+    "forest",
+    "midnight",
+    "opencode",
+    "opencode-dark",
+    "claude",
+    "claude-dark",
+    "minimax",
+    "minimax-dark",
+  ]).default("warm"),
   accent: z.string().default(""),
   radius: z.enum(["sharp", "soft", "rounded"]).default("soft"),
   headingFont: z.enum(["serif", "sans"]).default("serif"),

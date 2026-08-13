@@ -1,7 +1,8 @@
 /**
  * Visual theme engine.
  *
- * Four curated presets (warm / ocean / forest / midnight), each with a
+ * Curated presets (warm / ocean / forest / midnight / opencode / claude /
+ * minimax and their -dark variants), each with a
  * complete light and dark palette. Admins pick a preset from Settings →
  * Appearance and can
  * override the accent color, corner radius, and heading font. The resolved
@@ -17,7 +18,17 @@ import type { ThemeConfig } from "@/lib/content/types";
 
 /* ------------------------------- Presets --------------------------------- */
 
-export type ThemePreset = "warm" | "ocean" | "forest" | "midnight";
+export type ThemePreset =
+  | "warm"
+  | "ocean"
+  | "forest"
+  | "midnight"
+  | "opencode"
+  | "opencode-dark"
+  | "claude"
+  | "claude-dark"
+  | "minimax"
+  | "minimax-dark";
 export type RadiusStyle = "sharp" | "soft" | "rounded";
 export type HeadingFont = "serif" | "sans";
 
@@ -39,6 +50,10 @@ export interface ThemePresetDef {
   id: ThemePreset;
   label: string;
   tagline: string;
+  /** Recommended corner-radius scale — applied when the preset is selected. */
+  radius: RadiusStyle;
+  /** Recommended heading font — applied when the preset is selected. */
+  headingFont: HeadingFont;
   light: Palette;
   dark: Palette;
 }
@@ -48,6 +63,8 @@ export const THEME_PRESETS: Record<ThemePreset, ThemePresetDef> = {
     id: "warm",
     label: "Warm",
     tagline: "Cream paper, terracotta ink, serif charm.",
+    radius: "soft",
+    headingFont: "serif",
     light: {
       paper: "#faf6f0",
       surface: "#ffffff",
@@ -79,6 +96,8 @@ export const THEME_PRESETS: Record<ThemePreset, ThemePresetDef> = {
     id: "ocean",
     label: "Ocean",
     tagline: "Cool slate blues with a bright teal accent.",
+    radius: "soft",
+    headingFont: "sans",
     light: {
       paper: "#f2f7fa",
       surface: "#ffffff",
@@ -110,6 +129,8 @@ export const THEME_PRESETS: Record<ThemePreset, ThemePresetDef> = {
     id: "forest",
     label: "Forest",
     tagline: "Earthy greens on paper with a fresh eucalyptus accent.",
+    radius: "soft",
+    headingFont: "serif",
     light: {
       paper: "#f5f7f0",
       surface: "#ffffff",
@@ -141,6 +162,8 @@ export const THEME_PRESETS: Record<ThemePreset, ThemePresetDef> = {
     id: "midnight",
     label: "Midnight",
     tagline: "Navy backgrounds, warm gold accent, moody and refined.",
+    radius: "soft",
+    headingFont: "serif",
     light: {
       paper: "#f5f3f0",
       surface: "#ffffff",
@@ -166,6 +189,204 @@ export const THEME_PRESETS: Record<ThemePreset, ThemePresetDef> = {
       brandStrong: "#e0b832",
       brandSoft: "#1c1e14",
       onBrand: "#0c0a05",
+    },
+  },
+  opencode: {
+    id: "opencode",
+    label: "OpenCode",
+    tagline: "Terminal cream paper, near-black ink, mono precision.",
+    radius: "sharp",
+    headingFont: "sans",
+    light: {
+      paper: "#fdfcfc",
+      surface: "#f8f7f7",
+      surfaceSoft: "#f1eeee",
+      ink: "#201d1d",
+      inkMuted: "#646262",
+      line: "#e6e1e1",
+      lineStrong: "#646262",
+      brand: "#007aff",
+      brandStrong: "#0056b3",
+      brandSoft: "#d9eaff",
+      onBrand: "#ffffff",
+    },
+    dark: {
+      paper: "#201d1d",
+      surface: "#302c2c",
+      surfaceSoft: "#282424",
+      ink: "#fdfcfc",
+      inkMuted: "#9a9898",
+      line: "#3a3636",
+      lineStrong: "#646262",
+      brand: "#4f9bff",
+      brandStrong: "#007aff",
+      brandSoft: "#1c2533",
+      onBrand: "#ffffff",
+    },
+  },
+  "opencode-dark": {
+    id: "opencode-dark",
+    label: "OpenCode Dark",
+    tagline: "Near-black terminal canvas, blue syntax accent.",
+    radius: "sharp",
+    headingFont: "sans",
+    light: {
+      paper: "#201d1d",
+      surface: "#302c2c",
+      surfaceSoft: "#282424",
+      ink: "#fdfcfc",
+      inkMuted: "#9a9898",
+      line: "#3a3636",
+      lineStrong: "#646262",
+      brand: "#4f9bff",
+      brandStrong: "#007aff",
+      brandSoft: "#1c2533",
+      onBrand: "#ffffff",
+    },
+    dark: {
+      paper: "#15110f",
+      surface: "#241f1f",
+      surfaceSoft: "#1c1818",
+      ink: "#fdfcfc",
+      inkMuted: "#9a9898",
+      line: "#332f2f",
+      lineStrong: "#5a5555",
+      brand: "#5aa4ff",
+      brandStrong: "#007aff",
+      brandSoft: "#161d2b",
+      onBrand: "#ffffff",
+    },
+  },
+  claude: {
+    id: "claude",
+    label: "Claude",
+    tagline: "Warm cream canvas, coral accent, editorial serif.",
+    radius: "soft",
+    headingFont: "serif",
+    light: {
+      paper: "#faf9f5",
+      surface: "#efe9de",
+      surfaceSoft: "#f5f0e8",
+      ink: "#141413",
+      inkMuted: "#6c6a64",
+      line: "#e6dfd8",
+      lineStrong: "#d8d0c4",
+      brand: "#cc785c",
+      brandStrong: "#a9583e",
+      brandSoft: "#f6e3da",
+      onBrand: "#ffffff",
+    },
+    dark: {
+      paper: "#181715",
+      surface: "#252320",
+      surfaceSoft: "#1f1e1b",
+      ink: "#faf9f5",
+      inkMuted: "#a09d96",
+      line: "#2e2b27",
+      lineStrong: "#3a3631",
+      brand: "#e0917a",
+      brandStrong: "#cc785c",
+      brandSoft: "#2e201a",
+      onBrand: "#ffffff",
+    },
+  },
+  "claude-dark": {
+    id: "claude-dark",
+    label: "Claude Dark",
+    tagline: "Navy surface, warm coral, editorial serif.",
+    radius: "soft",
+    headingFont: "serif",
+    light: {
+      paper: "#181715",
+      surface: "#252320",
+      surfaceSoft: "#1f1e1b",
+      ink: "#faf9f5",
+      inkMuted: "#a09d96",
+      line: "#2e2b27",
+      lineStrong: "#3a3631",
+      brand: "#e0917a",
+      brandStrong: "#cc785c",
+      brandSoft: "#2e201a",
+      onBrand: "#ffffff",
+    },
+    dark: {
+      paper: "#121110",
+      surface: "#1d1b18",
+      surfaceSoft: "#191715",
+      ink: "#faf9f5",
+      inkMuted: "#a09d96",
+      line: "#272420",
+      lineStrong: "#342f2a",
+      brand: "#e89a83",
+      brandStrong: "#e0917a",
+      brandSoft: "#271a14",
+      onBrand: "#ffffff",
+    },
+  },
+  minimax: {
+    id: "minimax",
+    label: "MiniMax",
+    tagline: "Stark white canvas, black ink, vibrant coral.",
+    radius: "rounded",
+    headingFont: "sans",
+    light: {
+      paper: "#ffffff",
+      surface: "#f7f8fa",
+      surfaceSoft: "#f2f3f5",
+      ink: "#0a0a0a",
+      inkMuted: "#5f5f5f",
+      line: "#e5e7eb",
+      lineStrong: "#eaecf0",
+      brand: "#ff5530",
+      brandStrong: "#e0431f",
+      brandSoft: "#ffe5df",
+      onBrand: "#ffffff",
+    },
+    dark: {
+      paper: "#0a0a0a",
+      surface: "#181e25",
+      surfaceSoft: "#14181d",
+      ink: "#ffffff",
+      inkMuted: "#a8aab2",
+      line: "#2a2e33",
+      lineStrong: "#3a3f47",
+      brand: "#ff7a5c",
+      brandStrong: "#ff5530",
+      brandSoft: "#2a1814",
+      onBrand: "#ffffff",
+    },
+  },
+  "minimax-dark": {
+    id: "minimax-dark",
+    label: "MiniMax Dark",
+    tagline: "Near-black canvas, white ink, vibrant coral.",
+    radius: "rounded",
+    headingFont: "sans",
+    light: {
+      paper: "#0a0a0a",
+      surface: "#181e25",
+      surfaceSoft: "#14181d",
+      ink: "#ffffff",
+      inkMuted: "#a8aab2",
+      line: "#2a2e33",
+      lineStrong: "#3a3f47",
+      brand: "#ff7a5c",
+      brandStrong: "#ff5530",
+      brandSoft: "#2a1814",
+      onBrand: "#ffffff",
+    },
+    dark: {
+      paper: "#050505",
+      surface: "#12161b",
+      surfaceSoft: "#0e1115",
+      ink: "#ffffff",
+      inkMuted: "#a8aab2",
+      line: "#23272b",
+      lineStrong: "#33373f",
+      brand: "#ff8a70",
+      brandStrong: "#ff7a5c",
+      brandSoft: "#231712",
+      onBrand: "#ffffff",
     },
   },
 };
