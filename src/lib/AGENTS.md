@@ -13,8 +13,9 @@ All non-UI logic: content adapters, auth, markdown pipeline, SEO scoring, themin
 - `utils.ts` — slugify, dates, word counts, escapeXml, stripMarkdown (pure, imported by client code)
 
 ## Local Contracts
-- `auth/session.ts`: env credentials only; `verifyCredentials` **throws** on misconfiguration; rate limit 5 failed attempts / 15 min per IP (in-memory, per-instance — soft in serverless).
+- `auth/session.ts`: env credentials only; `verifyCredentials` **throws** on misconfiguration and runs a dummy bcrypt compare on username mismatch (no timing oracle); rate limit 5 failed attempts / 15 min per IP (in-memory, per-instance — soft in serverless) with a hard 10k-IP map cap; `isCrossOrigin(request)` is the CSRF guard used by every mutating admin API route.
 - `theme.ts`: palette hex lives here and in the `globals.css` fallbacks; accent derivation is WCAG-aware (`textOn`/`contrast`); `buildThemeCss` emits `html:root`/`html.dark` custom properties.
+- `seo/jsonld.ts`: `serializeJsonLd()` escapes `<`, `>`, `&`, U+2028/29 — always embed JSON-LD through it, never raw `JSON.stringify`.
 - Caches (site-config 30 s, GitHub adapter 60 s) are **per-instance** — never rely on cross-instance invalidation.
 
 ## Work Guidance

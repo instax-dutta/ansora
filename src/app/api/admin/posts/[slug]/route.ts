@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSession } from "@/lib/auth/session";
+import { getSession, isCrossOrigin } from "@/lib/auth/session";
 import { getAdapter } from "@/lib/content";
 import {
   assertPublishable,
@@ -9,17 +9,32 @@ import {
   parseSavePayload,
   PayloadError,
 } from "@/lib/content/validate";
+import { isSafeSlug } from "@/lib/content/slug";
+
+/** Reject slugs that could never name a real post file. */
+function requireSafeSlug(slug: string): void {
+  if (!isSafeSlug(slug)) {
+    throw new PayloadError("Invalid slug in the request path.");
+  }
+}
 
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ slug: string }> }
 ) {
+  if (isCrossOrigin(request)) {
+    return NextResponse.json(
+      { error: "Cross-origin request blocked." },
+      { status: 403 }
+    );
+  }
   if (!(await getSession())) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   try {
     const { slug: currentSlug } = await params;
+    requireSafeSlug(currentSlug);
     const { meta, body } = parseSavePayload(await request.json());
     assertPublishable(meta);
 
@@ -67,12 +82,19 @@ export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ slug: string }> }
 ) {
+  if (isCrossOrigin(request)) {
+    return NextResponse.json(
+      { error: "Cross-origin request blocked." },
+      { status: 403 }
+    );
+  }
   if (!(await getSession())) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   try {
     const { slug } = await params;
+    requireSafeSlug(slug);
     const body = await request.json();
     const published = Boolean(body?.published);
 
@@ -110,15 +132,22 @@ export async function PATCH(
 }
 
 export async function DELETE(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ slug: string }> }
 ) {
+  if (isCrossOrigin(request)) {
+    return NextResponse.json(
+      { error: "Cross-origin request blocked." },
+      { status: 403 }
+    );
+  }
   if (!(await getSession())) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   try {
     const { slug } = await params;
+    requireSafeSlug(slug);
     await getAdapter().deletePost(slug);
     return NextResponse.json({ ok: true });
   } catch (err) {

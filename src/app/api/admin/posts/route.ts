@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSession } from "@/lib/auth/session";
+import { getSession, isCrossOrigin } from "@/lib/auth/session";
 import { getAdapter } from "@/lib/content";
 import {
   assertPublishable,
@@ -10,6 +10,12 @@ import {
 } from "@/lib/content/validate";
 
 export async function POST(request: NextRequest) {
+  if (isCrossOrigin(request)) {
+    return NextResponse.json(
+      { error: "Cross-origin request blocked." },
+      { status: 403 }
+    );
+  }
   if (!(await getSession())) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }

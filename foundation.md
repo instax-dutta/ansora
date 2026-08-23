@@ -76,7 +76,9 @@ interface ContentAdapter {
 
 - Credentials: `ADMIN_USERNAME` + `ADMIN_PASSWORD_HASH` (bcrypt, starts with `$2`). `verifyCredentials` **throws** when unset/malformed — misconfiguration must fail loudly, not look like a wrong password.
 - Session: JWT (HS256, `sub: "admin"`) in the `ansora_session` httpOnly cookie, 7 days, `sameSite: lax`.
-- Login endpoint is rate-limited: **5 failed attempts / 15 min per IP**, in-memory (`loginAttempts` map). Serverless caveat: per-instance, so it's a *soft* throttle — by design.
+- Login endpoint is rate-limited: **5 failed attempts / 15 min per IP**, in-memory (`loginAttempts` map, capped at 10k IPs). Serverless caveat: per-instance, so it's a *soft* throttle — by design.
+- Every mutating admin API route runs `isCrossOrigin()` (Origin vs host check — CSRF defense-in-depth on top of the SameSite=Lax cookie).
+- Site-wide security headers (CSP, HSTS, nosniff, X-Frame-Options DENY, Referrer-Policy, Permissions-Policy) live only in `next.config.ts`.
 - Admin route guard: `src/app/admin/(dashboard)/layout.tsx` calls `getSession()` and redirects to `/admin/login` when unauthenticated.
 
 ### 4.3 Markdown pipeline (`src/lib/markdown/`)
@@ -84,6 +86,8 @@ interface ContentAdapter {
 - **One shared plugin chain** (`pipeline.ts`) powers both the public server renderer (`render.ts`, unified → `rehype-stringify`) and the editor's client preview (react-markdown). **Never let the two drift.**
 - Plugins: `remark-gfm`, `rehype-slug`, `rehype-pretty-code`, `rehype-autolink-headings`.
 - `render.ts` adds a hast post-pass mirroring react-markdown's `<a>`/`<img>` behavior: external links open in new tabs, images lazy-load, and **URL sanitization** (`SAFE_URL`) neutralizes `javascript:`/`data:` schemes. `rehype-stringify` does not sanitize — this pass is the safety net.
+- JSON-LD blocks embed through `serializeJsonLd()` (`src/lib/seo/jsonld.ts`), which escapes `<`/`>`/`&`/U+2028/29 so post fields can never break out of the `<script type="application/ld+json">` tag.
+- **Slug safety gate** (`src/lib/content/slug.ts`): both adapters validate every slug with `isSafeSlug()` before it becomes a file path or repo path — traversal slugs read as absent and refuse writes.
 - `extractToc` builds h2/h3 TOC with the same ids rehype-slug generates; shown for posts > 800 words with ≥ 2 headings.
 - `scanHeadings` is a cheap regex scan for the SEO scorer (code fences stripped first).
 

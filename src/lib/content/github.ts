@@ -13,6 +13,7 @@ import matter from "gray-matter";
 import { Octokit } from "octokit";
 import { TtlCache } from "./cache";
 import type { ContentAdapter } from "./index";
+import { isSafeSlug } from "./slug";
 import type { Post, PostMeta, SiteConfig } from "./types";
 import {
   DEFAULT_SITE_CONFIG,
@@ -142,6 +143,9 @@ export class GitHubApiAdapter implements ContentAdapter {
   }
 
   async getPost(slug: string): Promise<Post | null> {
+    // Slugs become repo paths — reject traversal attempts before they can
+    // address files outside the configured posts folder.
+    if (!isSafeSlug(slug)) return null;
     const cached = this.postCache.get(slug);
     if (cached !== undefined) return cached;
 
@@ -162,6 +166,9 @@ export class GitHubApiAdapter implements ContentAdapter {
   /* ------------------------------ Writes --------------------------------- */
 
   async savePost(slug: string, content: string, frontmatter: object): Promise<void> {
+    if (!isSafeSlug(slug)) {
+      throw new Error(`Refusing to save post with unsafe slug: ${JSON.stringify(slug)}`);
+    }
     const meta = normalizeFrontmatter(frontmatter as Record<string, unknown>);
     const filePath = this.filePath(slug);
     const serialized = matter.stringify(content, { ...meta, slug });
@@ -188,6 +195,7 @@ export class GitHubApiAdapter implements ContentAdapter {
   }
 
   async deletePost(slug: string): Promise<void> {
+    if (!isSafeSlug(slug)) return; // never resolve a hostile slug to a repo path
     const filePath = this.filePath(slug);
     const sha = await this.getFileSha(filePath);
     if (!sha) return;

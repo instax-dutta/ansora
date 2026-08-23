@@ -5,7 +5,7 @@ import { Toc } from "@/components/Toc";
 import { getAdapter } from "@/lib/content";
 import { extractToc } from "@/lib/markdown/pipeline";
 import { renderMarkdown } from "@/lib/markdown/render";
-import { buildPostJsonLd, postUrl } from "@/lib/seo/jsonld";
+import { buildPostJsonLd, postUrl, serializeJsonLd } from "@/lib/seo/jsonld";
 import { getSiteConfig } from "@/lib/site-config";
 import { countWords, formatDate, readingTimeMinutes } from "@/lib/utils";
 
@@ -168,12 +168,12 @@ export default async function BlogPostPage({
             </section>
           )}
 
-          {/* Structured data */}
+          {/* Structured data (escaped so post fields can't break out of the script tag) */}
           {jsonLd.map((graph, i) => (
             <script
               key={i}
               type="application/ld+json"
-              dangerouslySetInnerHTML={{ __html: JSON.stringify(graph) }}
+              dangerouslySetInnerHTML={{ __html: serializeJsonLd(graph) }}
             />
           ))}
         </article>

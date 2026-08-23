@@ -45,3 +45,19 @@ export function buildPostJsonLd(
 
   return graphs;
 }
+
+/**
+ * JSON.stringify hardened for embedding inside a <script type="application/ld+json">
+ * tag: raw stringify leaves `<`, `>`, `&` and the U+2028/U+2029 line
+ * separators intact, so a post field containing `</script>` could break out
+ * of the structured-data block and inject markup. Escaping them keeps the
+ * JSON semantically identical while making breakout impossible.
+ */
+export function serializeJsonLd(graph: Record<string, unknown>): string {
+  return JSON.stringify(graph)
+    .replace(/</g, "\\u003c")
+    .replace(/>/g, "\\u003e")
+    .replace(/&/g, "\\u0026")
+    .replace(/\u2028/g, "\\u2028")
+    .replace(/\u2029/g, "\\u2029");
+}

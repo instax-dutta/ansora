@@ -1,9 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getSession } from "@/lib/auth/session";
+import { getSession, isCrossOrigin } from "@/lib/auth/session";
 import { getAdapter } from "@/lib/content";
 import { siteConfigSchema } from "@/lib/content/types";
 
 export async function PUT(request: NextRequest) {
+  if (isCrossOrigin(request)) {
+    return NextResponse.json(
+      { error: "Cross-origin request blocked." },
+      { status: 403 }
+    );
+  }
   if (!(await getSession())) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }

@@ -36,11 +36,11 @@ ${categories}    </item>`;
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>${escapeXml(config.title)}</title>
-    <link>${baseUrl}</link>
+    <link>${escapeXml(baseUrl)}</link>
     <description>${escapeXml(config.description)}</description>
     <language>en</language>
     <lastBuildDate>${toRfc2822(new Date().toISOString())}</lastBuildDate>
-    <atom:link href="${baseUrl}/rss.xml" rel="self" type="application/rss+xml" />
+    <atom:link href="${escapeXml(`${baseUrl}/rss.xml`)}" rel="self" type="application/rss+xml" />
 ${items}  </channel>
 </rss>`;
 

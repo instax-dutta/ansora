@@ -14,7 +14,8 @@ App Router routes: the public site, the admin panel, and the admin API.
 ## Local Contracts
 - **Unpublished posts 404 on every public route** — check `post.meta.published` (pages, RSS, sitemap, llms.txt, JSON-LD).
 - Blog post pages: `revalidate = 300` (ISR); `generateStaticParams()` returns `[]` when `DEPLOYMENT_MODE=serverless`.
-- Admin API routes: 401 without a valid session; `safeParse` request bodies against zod schemas; never leak stack traces.
+- Admin API routes: 401 without a valid session; 403 via `isCrossOrigin()` when an Origin header claims a foreign host (CSRF defense-in-depth); `safeParse` request bodies against zod schemas; URL-path slugs validated with `isSafeSlug()` → 400 before adapter calls; never leak stack traces.
+- Security headers (CSP, HSTS, X-Frame-Options, nosniff, Referrer-Policy, Permissions-Policy) are defined once in `next.config.ts` — don't add per-route header overrides that weaken them; a nonce-based CSP would break SSG/ISR, so script/style keep `'unsafe-inline'`.
 - Error/404 pages must not leak stack traces.
 - The root-layout theme injection **must stay server-rendered** — do not move it client-side (breaks SSG and causes theme flash).
 

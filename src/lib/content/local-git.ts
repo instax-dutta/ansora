@@ -15,6 +15,7 @@ import path from "node:path";
 import matter from "gray-matter";
 import simpleGit, { type SimpleGit } from "simple-git";
 import type { ContentAdapter } from "./index";
+import { isSafeSlug } from "./slug";
 import type { Post, PostMeta, SiteConfig } from "./types";
 import {
   DEFAULT_SITE_CONFIG,
@@ -105,6 +106,9 @@ export class LocalGitAdapter implements ContentAdapter {
   }
 
   async getPost(slug: string): Promise<Post | null> {
+    // Slugs become file names — reject anything that could escape the posts
+    // directory (path traversal) before it ever touches the filesystem.
+    if (!isSafeSlug(slug)) return null;
     const fileName = `${slug}.md`;
     const raw = await fs
       .readFile(path.join(this.postsDir, fileName), "utf8")
@@ -120,6 +124,9 @@ export class LocalGitAdapter implements ContentAdapter {
   /* ------------------------------ Writes --------------------------------- */
 
   async savePost(slug: string, content: string, frontmatter: object): Promise<void> {
+    if (!isSafeSlug(slug)) {
+      throw new Error(`Refusing to save post with unsafe slug: ${JSON.stringify(slug)}`);
+    }
     const meta = normalizeFrontmatter(frontmatter as Record<string, unknown>);
     const file = path.join(this.postsDir, `${slug}.md`);
     const serialized = matter.stringify(content, {
@@ -133,6 +140,7 @@ export class LocalGitAdapter implements ContentAdapter {
   }
 
   async deletePost(slug: string): Promise<void> {
+    if (!isSafeSlug(slug)) return; // never resolve a hostile slug to a path
     const file = path.join(this.postsDir, `${slug}.md`);
     const exists = await fs.access(file).then(() => true).catch(() => false);
     if (!exists) return; // nothing to delete — mirror the GitHub adapter

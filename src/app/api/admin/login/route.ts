@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import {
   clientIp,
   createSessionToken,
+  isCrossOrigin,
   isRateLimited,
   recordLoginFailure,
   SESSION_COOKIE,
@@ -9,6 +10,14 @@ import {
 } from "@/lib/auth/session";
 
 export async function POST(request: NextRequest) {
+  // Reject forged cross-origin login attempts (CSRF defense-in-depth).
+  if (isCrossOrigin(request)) {
+    return NextResponse.json(
+      { error: "Cross-origin request blocked." },
+      { status: 403 }
+    );
+  }
+
   // Basic in-memory throttle (single admin — acceptable per spec). Only
   // failed attempts count toward the budget.
   const ip = clientIp(request.headers);

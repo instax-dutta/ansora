@@ -114,6 +114,9 @@ export function serializeFrontmatter(meta: PostMeta): Record<string, unknown> {
  * `radius` controls the global corner-radius scale; `headingFont` picks the
  * display font for headings. Applied site-wide via injected CSS variables.
  */
+/** "" = use the preset accent; otherwise a 3- or 6-digit hex color. */
+const HEX_COLOR = /^#([0-9a-fA-F]{6}|[0-9a-fA-F]{3})$/;
+
 export const themeConfigSchema = z.object({
   preset: z.enum([
     "warm",
@@ -127,7 +130,14 @@ export const themeConfigSchema = z.object({
     "minimax",
     "minimax-dark",
   ]).default("warm"),
-  accent: z.string().default(""),
+  // Strict hex so an arbitrary string can never ride into the injected CSS.
+  // (resolveTheme guards this too — belt and braces.)
+  accent: z
+    .string()
+    .default("")
+    .refine((v) => v === "" || HEX_COLOR.test(v), {
+      message: "Accent must be empty or a hex color like #b04e14.",
+    }),
   radius: z.enum(["sharp", "soft", "rounded"]).default("soft"),
   headingFont: z.enum(["serif", "sans"]).default("serif"),
 });
@@ -140,11 +150,26 @@ export const DEFAULT_THEME_CONFIG: ThemeConfig = {
   headingFont: "serif",
 };
 
+/** Must be an absolute http(s) URL — it feeds canonical tags, sitemap, RSS. */
+function isHttpUrl(value: string): boolean {
+  try {
+    const url = new URL(value);
+    return url.protocol === "http:" || url.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
 export const siteConfigSchema = z.object({
   title: z.string().default("Ansora"),
   description: z.string().default("A quiet, self-hosted blog."),
   /** Public base URL — canonical links, sitemap, RSS, OG tags. */
-  baseUrl: z.string().default("http://localhost:3000"),
+  baseUrl: z
+    .string()
+    .default("http://localhost:3000")
+    .refine(isHttpUrl, {
+      message: "Base URL must be an absolute http(s) URL.",
+    }),
   author: z.string().default("Ansora Author"),
   defaultOgImage: z.string().default(""),
   social: z

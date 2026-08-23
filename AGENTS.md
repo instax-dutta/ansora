@@ -75,6 +75,7 @@ Default section order:
 - **No plaintext secrets** — only the bcrypt `ADMIN_PASSWORD_HASH`; never log credentials or tokens.
 - **Components use theme tokens, not hex colors.** Palette hex lives only in `src/lib/theme.ts` and the `globals.css` fallbacks.
 - **SEO/AEO surface is non-negotiable** — canonical URLs, metadata, JSON-LD, RSS/sitemap/robots/llms.txt stay correct.
+- **Security baseline (audited 2026-08):** slugs are validated by `isSafeSlug()` inside both content adapters before touching any path; every mutating admin API route runs `isCrossOrigin()`; site-wide security headers live only in `next.config.ts`; JSON-LD embeds through `serializeJsonLd()`. Do not bypass any of these.
 - **Deep reference:** `foundation.md` is the canonical codebase knowledge doc — read it before major work.
 
 ## Child DOX Index
