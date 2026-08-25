@@ -66,7 +66,7 @@ export async function Footer() {
           </span>
           <span className="flex items-center gap-3">
             <a
-              href="https://github.com"
+              href="https://github.com/instax-dutta/ansora"
               target="_blank"
               rel="noopener noreferrer"
               className="transition-colors hover:text-brand"
