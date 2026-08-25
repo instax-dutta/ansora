@@ -230,7 +230,7 @@ Never commit `.env*`. `.env.local` exists locally for serverless verification (f
 
 ## 11. Build & deployment
 
-- `npm run build` → Next standalone output. `next.config.ts` externalizes `simple-git` and `octokit` (`serverExternalPackages`).
+- `npm run build` → Next standalone output **except on Vercel**, where `output: "standalone"` breaks the platform build (missing `.next/next-server.js.nft.json`) — `next.config.ts` disables it when `process.env.VERCEL` is set. Docker/VPS builds keep standalone. `next.config.ts` externalizes `simple-git` and `octokit` (`serverExternalPackages`).
 - **Serverless mode** (Vercel/Netlify): `DEPLOYMENT_MODE=serverless` + GitHub env vars. Blog pages use ISR (`revalidate = 300`) and `generateStaticParams()` returns `[]` in serverless mode (no build-time SSG of posts). A GitHub webhook → Netlify/Vercel **build hook** triggers a rebuild on every content commit; ISR is the 5-minute fallback.
 - **Self-hosted**: Docker (`Dockerfile` + `docker-compose.yml`, content volume at `/app/content`) or any VPS; Render one-click via `render.yaml` (persistent disk, `sync: false` secrets).
 - One-click deploy buttons (Netlify/Vercel/Render) live at the top of the README, pointing at `github.com/instax-dutta/ansora`.

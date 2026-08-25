@@ -38,7 +38,9 @@ const SECURITY_HEADERS = [
 
 const nextConfig: NextConfig = {
   // Standalone output lets the Dockerfile ship a minimal production server.
-  output: "standalone",
+  // On Vercel it's unnecessary and breaks its build (missing
+  // .next/next-server.js.nft.json), so only enable it off-platform.
+  output: process.env.VERCEL ? undefined : "standalone",
   // These packages use runtime `require()` / dynamic imports and are best
   // left unbundled and externalized to node_modules in the standalone build.
   serverExternalPackages: ["simple-git", "octokit"],
