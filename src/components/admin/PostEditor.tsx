@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useEffectEvent, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Markdown } from "@/components/Markdown";
+import { MarkdownPreview } from "./MarkdownPreview";
 import type { Post, PostMeta } from "@/lib/content/types";
 import { slugify } from "@/lib/utils";
 import { ImageDialog } from "./ImageDialog";
@@ -398,7 +398,7 @@ export function PostEditor({ post }: EditorProps) {
         >
           <article className="mx-auto w-full max-w-2xl px-6 py-6">
             <div className="prose prose-warm max-w-none text-[1rem] leading-7">
-              <Markdown>{body || "*Nothing to preview yet — start writing.*"}</Markdown>
+            <MarkdownPreview markdown={body || ""} />
             </div>
           </article>
         </div>

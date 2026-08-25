@@ -9,12 +9,13 @@ The **single** markdown rendering pipeline shared by the public site and the edi
 - `seo-score.ts` — 0–100 weighted SEO/AEO scorer with a per-check checklist (+ `seo-score.fixtures.ts`)
 
 ## Local Contracts
-- **One pipeline for both renderers** — the editor preview (`src/components/Markdown.tsx`) must equal the public render. Never create a second rendering path.
+- **One pipeline for both renderers** — the editor preview renders through `render.ts` via `POST /api/admin/preview` (`src/components/admin/MarkdownPreview.tsx` debounces calls), so preview equals public render **by construction**. Never create a second rendering path.
+- **Do not reintroduce react-markdown for the preview.** It executes its unified pipeline synchronously (`runSync`), which is incompatible with async plugins — `rehype-pretty-code`/Shiki always finishes async, which 500'd every edit page (SSR and browser alike). Any client-side markdown rendering must go through the server pipeline.
 - `rehype-stringify` does not sanitize — `render.ts`'s post-pass is the safety net for links/images. Keep it.
 - Shiki theme for code blocks: `everforest-dark` (reads well in both site themes).
 
 ## Work Guidance
-- Add plugins to `pipeline.ts` and verify `src/components/Markdown.tsx` picks them up (preview sync).
+- Add plugins to `pipeline.ts`; they automatically apply to both the public site and the editor preview (both go through `renderMarkdown`).
 - The SEO scorer checks are real, not stubs — weighted to 0–100 with a checklist. Keep the weightings sane when adding checks.
 
 ## Verification

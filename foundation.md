@@ -83,7 +83,7 @@ interface ContentAdapter {
 
 ### 4.3 Markdown pipeline (`src/lib/markdown/`)
 
-- **One shared plugin chain** (`pipeline.ts`) powers both the public server renderer (`render.ts`, unified → `rehype-stringify`) and the editor's client preview (react-markdown). **Never let the two drift.**
+- **One shared plugin chain** (`pipeline.ts`) powers both the public server renderer (`render.ts`, unified → `rehype-stringify`) and the editor's live preview (debounced `POST /api/admin/preview` → the same `renderMarkdown`). **Never let the two drift — and never render the preview with react-markdown**: it runs unified synchronously (`runSync`), which cannot host async plugins (Shiki) and 500s every edit page.
 - Plugins: `remark-gfm`, `rehype-slug`, `rehype-pretty-code`, `rehype-autolink-headings`.
 - `render.ts` adds a hast post-pass mirroring react-markdown's `<a>`/`<img>` behavior: external links open in new tabs, images lazy-load, and **URL sanitization** (`SAFE_URL`) neutralizes `javascript:`/`data:` schemes. `rehype-stringify` does not sanitize — this pass is the safety net.
 - JSON-LD blocks embed through `serializeJsonLd()` (`src/lib/seo/jsonld.ts`), which escapes `<`/`>`/`&`/U+2028/29 so post fields can never break out of the `<script type="application/ld+json">` tag.

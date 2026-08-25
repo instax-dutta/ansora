@@ -8,7 +8,7 @@ App Router routes: the public site, the admin panel, and the admin API.
 - `globals.css` — Tailwind v4, live theme tokens, `prose-warm` article styles
 - `(public)/` — `/`, `/blog/[slug]`, `/tags`, `/tags/[tag]`
 - `admin/` — login + dashboard (posts list, editor, settings); guarded by `(dashboard)/layout.tsx` via `getSession()` → redirect to `/admin/login`
-- `api/admin/` — `login`, `logout`, `posts`, `posts/[slug]`, `settings` (zod-validated, session-guarded)
+- `api/admin/` — `login`, `logout`, `posts`, `posts/[slug]`, `settings`, `preview` (zod-validated, session-guarded; `preview` renders editor markdown through the shared server pipeline)
 - `rss.xml/`, `sitemap.ts`, `robots.ts`, `llms.txt`, `not-found.tsx`, `error.tsx`, `global-error.tsx`
 
 ## Local Contracts

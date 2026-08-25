@@ -4,9 +4,9 @@
 Shared public components and admin-panel components (editor, SEO panel, image dialog, settings form, posts table, …).
 
 ## Ownership
-- Public site: `Header.tsx`, `Footer.tsx`, `PostCard.tsx`, `Pagination.tsx`, `Markdown.tsx`, `ProseHtml.tsx`, `Toc.tsx`, `ThemeToggle.tsx`
-- Admin panel: `admin/` — `PostEditor.tsx`, `SettingsForm.tsx`, `SeoPanel.tsx`, `ShortcutPanel.tsx`, `ImageDialog.tsx`, `PostsTable.tsx`, `LoginForm.tsx`, `AdminHeader.tsx`
-- `Markdown.tsx` (client preview) must stay in sync with the shared pipeline — see `lib/markdown/AGENTS.md` (canonical rule: editor preview equals the public render).
+- Public site: `Header.tsx`, `Footer.tsx`, `PostCard.tsx`, `Pagination.tsx`, `ProseHtml.tsx`, `Toc.tsx`, `ThemeToggle.tsx`
+- Admin panel: `admin/` — `PostEditor.tsx`, `MarkdownPreview.tsx`, `SettingsForm.tsx`, `SeoPanel.tsx`, `ShortcutPanel.tsx`, `ImageDialog.tsx`, `PostsTable.tsx`, `LoginForm.tsx`, `AdminHeader.tsx`
+- `admin/MarkdownPreview.tsx` renders through `POST /api/admin/preview` (the shared server pipeline) — do NOT replace it with react-markdown; its synchronous `runSync` cannot host the async Shiki plugin chain (see `lib/markdown/AGENTS.md`).
 
 ## Local Contracts
 - Use theme tokens (`bg-paper`, `text-ink`, `bg-brand`, `border-line`, `bg-brand-soft`, `text-brand-strong`, …) — **never hardcoded hex colors**.

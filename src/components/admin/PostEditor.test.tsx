@@ -17,10 +17,10 @@ vi.mock("next/link", () => ({
 }));
 
 // The live preview is not the subject of these tests; a stub keeps the suite
-// fast and avoids pulling Shiki/react-markdown into the shortcut tests.
-vi.mock("@/components/Markdown", () => ({
-  Markdown: ({ children }: { children: string }) => (
-    <div data-testid="preview">{children}</div>
+// fast and avoids pulling the server pipeline into the shortcut tests.
+vi.mock("@/components/admin/MarkdownPreview", () => ({
+  MarkdownPreview: ({ markdown }: { markdown: string }) => (
+    <div data-testid="preview">{markdown}</div>
   ),
 }));
 
