@@ -124,6 +124,7 @@ describe("GitHubApiAdapter", () => {
     it("lists only .md posts under the posts path, newest first", async () => {
       mocks.getTree.mockResolvedValue({
         data: {
+          sha: "tree-1",
           tree: [
             { path: "content/posts/a.md", type: "blob" },
             { path: "content/posts/b.md", type: "blob" },
@@ -156,9 +157,51 @@ describe("GitHubApiAdapter", () => {
       ]);
       expect(posts[0].title).toBe("content/posts/a.md");
 
-      // Cached — the tree is only fetched once.
+      // The tree metadata is re-checked, while post parsing is served from
+      // the cache when the repository tree SHA is unchanged.
       await adapter.listPosts();
-      expect(mocks.getTree).toHaveBeenCalledTimes(1);
+      expect(mocks.getTree).toHaveBeenCalledTimes(2);
+      expect(mocks.getContent).toHaveBeenCalledTimes(3);
+    });
+
+    it("refreshes the list when the repository tree changes", async () => {
+      mocks.getTree
+        .mockResolvedValueOnce({
+          data: {
+            sha: "tree-1",
+            tree: [{ path: "content/posts/first.md", type: "blob" }],
+          },
+        })
+        .mockResolvedValueOnce({
+          data: {
+            sha: "tree-2",
+            tree: [
+              { path: "content/posts/first.md", type: "blob" },
+              { path: "content/posts/second.md", type: "blob" },
+            ],
+          },
+        });
+      mocks.getContent.mockImplementation(async ({ path }) =>
+        file(
+          [
+            "---",
+            `title: ${path}`,
+            "date: 2026-02-01",
+            "---",
+            "",
+            "x",
+          ].join("\n")
+        )
+      );
+
+      const adapter = makeAdapter();
+      expect((await adapter.listPosts()).map((p) => p.title)).toEqual([
+        "content/posts/first.md",
+      ]);
+      expect((await adapter.listPosts()).map((p) => p.title)).toEqual([
+        "content/posts/first.md",
+        "content/posts/second.md",
+      ]);
     });
 
     it("treats a branch-less repo (404 tree) as empty", async () => {

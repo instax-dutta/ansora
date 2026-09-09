@@ -94,11 +94,10 @@ export class GitHubApiAdapter implements ContentAdapter {
   /* ------------------------------ Reads ---------------------------------- */
 
   async listPosts(): Promise<PostMeta[]> {
-    const cached = this.listCache.get("all");
-    if (cached) return cached;
-
-    // One recursive tree call to enumerate files, then a contents call per
-    // post to parse frontmatter. A 60s cache keeps this cheap in practice.
+    // Always re-check the tree metadata so a new content commit is visible
+    // immediately, even when the request lands on a warm serverless instance.
+    // The tree SHA changes whenever a file in the repository tree changes, so
+    // unchanged content still benefits from the short-lived parsed-list cache.
     const tree = await this.octokit.rest.git.getTree({
       owner: this.owner,
       repo: this.repo,
@@ -119,6 +118,15 @@ export class GitHubApiAdapter implements ContentAdapter {
       throw err;
     });
 
+    const treeSha =
+      "sha" in tree.data && typeof tree.data.sha === "string"
+        ? tree.data.sha
+        : null;
+    if (treeSha) {
+      const cached = this.listCache.get(treeSha);
+      if (cached) return cached;
+    }
+
     const prefix = `${this.options.postsPath}/`;
     const files =
       tree.data.tree?.filter(
@@ -138,7 +146,7 @@ export class GitHubApiAdapter implements ContentAdapter {
     }
 
     posts.sort((a, b) => b.date.localeCompare(a.date));
-    this.listCache.set("all", posts);
+    if (treeSha) this.listCache.set(treeSha, posts);
     return posts;
   }
 
@@ -235,7 +243,8 @@ export class GitHubApiAdapter implements ContentAdapter {
   }
 
   async saveSiteConfig(config: SiteConfig): Promise<void> {
-    const content = `${JSON.stringify(config, null, 2)}\n`;
+    const content = `${JSON.stringify(config, null, 2)}
+`;
 
     // Same no-op guard as savePost — don't commit unchanged config.
     const current = await this.getFileRaw(this.options.configPath);

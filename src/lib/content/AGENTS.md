@@ -6,7 +6,7 @@ The **ContentAdapter pattern** — the heart of Ansora. All content I/O goes thr
 ## Ownership
 - `index.ts` — `ContentAdapter` interface + `getAdapter()` (the **only** place that branches on `DEPLOYMENT_MODE`)
 - `local-git.ts` — `LocalGitAdapter`: disk + `simple-git` commits (optional push via `GIT_AUTO_PUSH`)
-- `github.ts` — `GitHubApiAdapter`: octokit Contents API, SHA-based updates, 60 s `TtlCache` reads
+- `github.ts` — `GitHubApiAdapter`: octokit Contents API, SHA-based updates, and tree-SHA-aware parsed-list caching
 - `types.ts` — zod schemas: `postMetaSchema`, `siteConfigSchema`, `themeConfigSchema` + defaults (`accent` must be hex or empty; `baseUrl` must be an absolute http(s) URL)
 - `slug.ts` — `isSafeSlug()` slug safety gate: both adapters call it before any slug touches a file path / repo path (path-traversal defense)
 - `cache.ts` — `TtlCache` (in-memory, per-instance)
