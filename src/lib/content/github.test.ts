@@ -96,8 +96,7 @@ describe("GitHubApiAdapter", () => {
         "---",
         "",
         "Body here.",
-      ].join("
-");
+      ].join("\n");
       mocks.getContent.mockResolvedValue(file(md, "sha-abc"));
 
       const adapter = makeAdapter();
@@ -144,8 +143,7 @@ describe("GitHubApiAdapter", () => {
             "---",
             "",
             "x",
-          ].join("
-")
+          ].join("\n")
         )
       );
 
@@ -192,8 +190,7 @@ describe("GitHubApiAdapter", () => {
             "---",
             "",
             "x",
-          ].join("
-")
+          ].join("\n")
         )
       );
 
