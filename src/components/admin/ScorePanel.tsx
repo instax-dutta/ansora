@@ -3,6 +3,11 @@
 import { useMemo } from "react";
 import type { PostMeta, SiteConfig } from "@/lib/content/types";
 import { computeAeoScore, aeoToneFor, type AeoInput } from "@/lib/markdown/aeo-score";
+import {
+  findCannibalization,
+  findOrphanWarning,
+  type OverlapWarning,
+} from "@/lib/markdown/overlap";
 import { computeSeoScore } from "@/lib/markdown/seo-score";
 import { resolveSerp, resolveSocial, truncate } from "@/lib/seo/preview";
 
@@ -21,6 +26,8 @@ export interface ScorePanelProps {
   content: string;
   config: SiteConfig;
   faqCount: number;
+  /** Other published posts, for the cannibalization / orphan checks. */
+  siblingPosts?: PostMeta[];
 }
 
 function Ring({
@@ -126,7 +133,13 @@ function CheckList({
   );
 }
 
-export function ScorePanel({ meta, content, config, faqCount }: ScorePanelProps) {
+export function ScorePanel({
+  meta,
+  content,
+  config,
+  faqCount,
+  siblingPosts = [],
+}: ScorePanelProps) {
   const seo = useMemo(
     () =>
       computeSeoScore({
@@ -157,6 +170,16 @@ export function ScorePanel({ meta, content, config, faqCount }: ScorePanelProps)
 
   const serp = useMemo(() => resolveSerp(meta, config), [meta, config]);
   const social = useMemo(() => resolveSocial(meta, config), [meta, config]);
+
+  // Cross-post checks. `slug` is still the stored one, so an unpublished new
+  // post compares against the whole published set without matching itself.
+  const warnings = useMemo<OverlapWarning[]>(() => {
+    if (siblingPosts.length === 0) return [];
+    return [
+      ...findCannibalization(meta, siblingPosts),
+      ...(findOrphanWarning(meta) ? [findOrphanWarning(meta) as OverlapWarning] : []),
+    ];
+  }, [meta, siblingPosts]);
 
   const seoTone =
     seo.score >= 80
@@ -191,6 +214,31 @@ export function ScorePanel({ meta, content, config, faqCount }: ScorePanelProps)
 
       <CheckList checks={aeo.checks} />
       <CheckList checks={seo.checks} />
+
+      {warnings.length > 0 && (
+        <div
+          role="status"
+          className="rounded-xl border border-line bg-surface-soft/50 p-4"
+        >
+          <p className="text-xs font-semibold uppercase tracking-wider text-ink-muted">
+            Site-wide conflicts
+          </p>
+          <ul className="mt-2 space-y-2">
+            {warnings.map((warning, i) => (
+              <li key={`${warning.kind}-${i}`} className="text-xs leading-relaxed text-ink-muted">
+                <span
+                  className={`mr-1.5 font-semibold ${
+                    warning.severity === "high" ? "text-brand-strong" : "text-ink"
+                  }`}
+                >
+                  {warning.severity === "high" ? "!" : "·"}
+                </span>
+                {warning.message}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       {/* Live search-result preview, from the values that will actually ship */}
       <div className="rounded-xl border border-line bg-paper p-4">

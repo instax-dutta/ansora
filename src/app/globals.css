@@ -114,12 +114,24 @@ body {
   font-size: 0.85em;
 }
 
+/* Images inside the post body.
+   `height: auto` with `max-width: 100%` is what stops a wide screenshot from
+   forcing a horizontal scrollbar, and the aspect-ratio placeholder stops the
+   page from reflowing as each image lands. Markdown carries no intrinsic
+   dimensions, so without this every body image is a CLS source. */
+.prose-warm img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 0.75rem;
+  border: 1px solid var(--line);
+  background: var(--surface-soft);
+}
+
 /* Fenced code blocks (styled by rehype-pretty-code / shiki). */
 .prose-warm pre {
   border-radius: 0.75rem;
   border: 1px solid var(--line);
 }
-
 .prose-warm pre code {
   background: transparent;
   padding: 0;

@@ -70,6 +70,8 @@ interface ContentAdapter {
 - **`getAdapter()`** (`src/lib/content/index.ts`) picks the implementation once from `DEPLOYMENT_MODE` and caches it. All content I/O in the app goes through this — never read files/GitHub directly elsewhere.
 - **`LocalGitAdapter`** (`src/lib/content/local-git.ts`): reads/writes disk under `CONTENT_DIR` (default `./content`), commits with `simple-git`, optional push via `GIT_AUTO_PUSH=true`. Lazy `git init` on first write.
 - **`GitHubApiAdapter`** (`src/lib/content/github.ts`): octokit Contents API. Updating a file requires its current **SHA** (fetch first). Reads hit the API directly with a 60 s `TtlCache`. Treats a fresh/empty repo as empty (404 → `[]`).
+  - `listPosts()` re-reads the branch tree SHA on every call so a new content commit is visible immediately, then reuses a parsed-list cache keyed by that SHA (`3fab213`). **Do not put a persistent cache in front of it** — that reintroduces the bug that commit fixed.
+  - Because frontmatter needs the file body, listing N posts costs N content reads. Those are fetched with `mapWithConcurrency(files, 8, …)` (`content/concurrency.ts`) rather than serially: the sequential version made every uncached page pay N round-trip latencies and was the dominant cost of the home page. Freshness is unaffected because only the parallelism changed.
 - **No-op guard:** if the serialized file is byte-identical to what's stored, skip the commit — in *both* adapters. Keep this when editing them.
 - **Site config** lives in `content/site.config.json` (path configurable in serverless mode) and is read/written through the same adapter.
 
@@ -110,7 +112,8 @@ The governing idea: **AI engines do not just read pages, they assemble an entity
   - `src/lib/seo/preview.ts` powers the live SERP and social-card previews from the exact values that will ship.
 - **Citable content fields** (optional frontmatter, all additive): `answer`, `takeaways`, `sources`, `updatedReason`, `coverImageAlt`.
 - **Internal linking**: `src/lib/content/related.ts` gives every post prev/next neighbours plus tag-overlap related posts, so the crawl graph is not one-directional from the home page.
-- **Bulk body loading**: `src/lib/content/bodies.ts`. `listPosts()` returns frontmatter only, and the GitHub adapter already fetches every post file to parse it — so any surface needing bodies pays a second round of per-post requests. All such surfaces go through `bodies.ts` with an explicit cap (RSS 10, feed.json 20, llms-full.txt 100).
+- **Bulk body loading**: `src/lib/content/bodies.ts`. `listPosts()` returns frontmatter only, and the GitHub adapter already fetches every post file to parse it — so any surface needing bodies pays a second round of per-post requests. All such surfaces go through `bodies.ts` with an explicit cap (RSS 10, feed.json 20, llms-full.txt 100) **and** a wall-clock budget, so a serverless function returns a short feed instead of timing out. Loading is sequential on purpose: a parallel burst cannot be abandoned part-way, which would defeat the deadline.
+- **Discovery surface**: `/topics` ranks topics by post count; `/search-index.json` powers a dependency-free client-side search box and is built from the same `isIndexable()` set as the sitemap. `Toc.tsx` renders a mobile `<details>` variant because the desktop sidebar is `hidden lg:block`.
 
 ### 4.5 Theme system (added later — do not regress)
 
@@ -242,6 +245,8 @@ Never commit `.env*`. `.env.local` exists locally for serverless verification (f
 - **Drafts stay private**: check `meta.published` before any public exposure (page, RSS, feeds, sitemap, JSON-LD, llms.txt, `/md/*`).
 - **Keep accessibility**: labeled form fields, accessible names, WCAG AA contrast, `prefers-reduced-motion` respect (existing `animate-*` utilities already gate on it).
 - **Colocate tests** next to the code, run `npm run typecheck && npm run lint && npm test && npm run build` before finishing.
+- **Fetch remote resources with bounded concurrency**, not a sequential loop, whenever the loop body is a network call. `mapWithConcurrency` in `content/concurrency.ts` preserves input order and caps in-flight work.
+- **Measure before optimising.** The home page was 1.86 s TTFB; the cause turned out to be 32 serial API calls, not the missing cache everyone assumed. Check the profile before adding a cache.
 - **Preserve the SEO/AEO/GEO surface** — new routes should still emit canonical URLs, metadata, feed links, and keep sitemap/robots/llms current.
 
 ## 9. Conventions — DON'T
@@ -260,6 +265,8 @@ Never commit `.env*`. `.env.local` exists locally for serverless verification (f
 - ❌ **Don't overwrite the editor's single pipeline** — a second rendering path for the preview is a regression waiting to happen.
 - ❌ **Don't break existing content.** No frontmatter field without a default and an empty-omitting serializer; no URL change that stops resolving; no content-model change that rewrites a pre-existing post file.
 - ❌ **Don't collapse the two scorers into one number.** A high traditional SEO score does not imply a citable post.
+- ❌ **Don't add a persistent cache in front of `listPosts()`.** The tree-SHA cache exists so a content commit appears on the homepage immediately (`3fab213`). Fix latency with concurrency, not staleness.
+- ❌ **Don't block a save on advisory advice.** Cannibalization and orphan warnings are judgement calls; only genuinely broken input (a malformed `seo.canonicalUrl`, which can deindex a post) should throw.
 - ❌ **Don't use `next/image` for cover images.** Cover URLs are arbitrary external hosts and the optimizer would need the *server* to fetch them, which breaks on air-gapped or bandwidth-capped self-hosted deploys. A raw `<img>` with `fetchPriority="high"` plus an explicit `aspect-[16/9]` gets the LCP and CLS wins with no server-side dependency.
 
 ## 10. Testing

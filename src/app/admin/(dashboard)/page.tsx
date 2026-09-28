@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { getAdapter } from "@/lib/content";
+import { monthsSince } from "@/lib/markdown/overlap";
 import { getSiteConfig } from "@/lib/site-config";
 import { formatDate } from "@/lib/utils";
 
@@ -12,15 +13,30 @@ export default async function AdminDashboardPage() {
     getSiteConfig(),
   ]);
 
-  const published = posts.filter((p) => p.published).length;
-  const drafts = posts.length - published;
+  const published = posts.filter((p) => p.published);
+  const drafts = posts.length - published.length;
   const recent = [...posts]
     .sort((a, b) => (b.updated || b.date).localeCompare(a.updated || a.date))
     .slice(0, 6);
 
+  // Freshness watch. AI search engines weight recency, so a post that is
+  // quietly going stale is worth a nudge — but only once it is actually old.
+  // A badge that fires on everything is a badge nobody reads, so anything
+  // under three months is deliberately silent.
+  const stale = published
+    .map((post) => ({ post, months: monthsSince(post.updated || post.date) }))
+    .filter(
+      (entry): entry is { post: (typeof published)[number]; months: number } =>
+        entry.months !== null && entry.months >= 3
+    )
+    .sort((a, b) => b.months - a.months)
+    .slice(0, 5);
+
+  const untagged = published.filter((p) => p.tags.length === 0).length;
+
   const stats = [
     { label: "Total posts", value: posts.length },
-    { label: "Published", value: published },
+    { label: "Published", value: published.length },
     { label: "Drafts", value: drafts },
   ];
 
@@ -114,6 +130,50 @@ export default async function AdminDashboardPage() {
 
         {/* Side column */}
         <div className="space-y-6">
+          {(stale.length > 0 || untagged > 0) && (
+            <section
+              aria-label="Content health"
+              className="rounded-2xl border border-line bg-surface p-5"
+            >
+              <h2 className="font-serif text-lg font-semibold text-ink">
+                Content health
+              </h2>
+              {untagged > 0 && (
+                <p className="mt-3 text-sm text-ink-muted">
+                  {untagged} published {untagged === 1 ? "post has" : "posts have"}{" "}
+                  no tags, so nothing links to {untagged === 1 ? "it" : "them"}.
+                  A tag is what puts a post in a related-post list.
+                </p>
+              )}
+              {stale.length > 0 && (
+                <>
+                  <p className="mt-3 text-sm text-ink-muted">
+                    Worth refreshing. AI search weights recency, and a post
+                    nobody has touched in months reads as abandoned rather than
+                    evergreen.
+                  </p>
+                  <ul className="mt-4 space-y-2 text-sm">
+                    {stale.map(({ post, months }) => (
+                      <li key={post.slug}>
+                        <Link
+                          href={`/admin/posts/${encodeURIComponent(post.slug)}/edit`}
+                          className="flex items-start justify-between gap-3 rounded-lg border border-line px-3 py-2 transition-colors hover:border-line-strong"
+                        >
+                          <span className="min-w-0 truncate text-ink">
+                            {post.title || "Untitled"}
+                          </span>
+                          <span className="shrink-0 rounded-full bg-surface-soft px-2 py-0.5 text-xs font-medium text-ink-muted">
+                            {months} mo
+                          </span>
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                </>
+              )}
+            </section>
+          )}
+
           <section aria-label="Quick actions" className="rounded-2xl border border-line bg-surface p-5">
             <h2 className="font-serif text-lg font-semibold text-ink">Quick actions</h2>
             <ul className="mt-4 space-y-2 text-sm">

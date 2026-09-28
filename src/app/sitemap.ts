@@ -1,6 +1,14 @@
 import type { MetadataRoute } from "next";
 import { safeListPosts } from "@/lib/content";
-import { aboutUrl, blogUrl, homeUrl, tagsUrl, postUrl, tagUrl } from "@/lib/seo/jsonld";
+import {
+  aboutUrl,
+  blogUrl,
+  homeUrl,
+  postUrl,
+  tagUrl,
+  tagsUrl,
+  topicsUrl,
+} from "@/lib/seo/jsonld";
 import { indexableTags, isIndexable } from "@/lib/seo/publish";
 import { getSiteConfig } from "@/lib/site-config";
 
@@ -29,6 +37,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     },
     { url: blogUrl(config), changeFrequency: "daily", priority: 0.9 },
     { url: tagsUrl(config), changeFrequency: "weekly", priority: 0.5 },
+    { url: topicsUrl(config), changeFrequency: "weekly", priority: 0.6 },
     { url: aboutUrl(config), changeFrequency: "monthly", priority: 0.4 },
   ];
 

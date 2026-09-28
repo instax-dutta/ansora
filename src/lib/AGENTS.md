@@ -5,12 +5,13 @@ All non-UI logic: content adapters, auth, markdown pipeline, SEO/AEO scoring, en
 
 ## Ownership
 - `content/` — ContentAdapter pattern → see `content/AGENTS.md`
-- `markdown/` — shared pipeline + SEO and AEO scorers → see `markdown/AGENTS.md`
+- `markdown/` — shared pipeline + SEO/AEO scorers + cross-post overlap → see `markdown/AGENTS.md`
 - `auth/session.ts` — JWT (jose) + bcrypt credentials + login rate limiting (single file)
 - `theme.ts` — theme presets (warm/ocean/forest/midnight + opencode/claude/minimax and their -dark variants) + `buildThemeCss`
 - `site-config.ts` — `getSiteConfig()` with 30 s TTL; `SITE_URL` seeds `baseUrl` until changed in admin
 - `seo/` — the AI-search layer → see `seo/AGENTS.md`
 - `utils.ts` — slugify, `tagSlug`/`resolveTagFromSlug`, dates, word counts, escapeXml, stripMarkdown, truncate (pure, imported by client code)
+- `content/concurrency.ts` — `mapWithConcurrency`, the bounded-parallelism helper used by the GitHub adapter
 
 ## Local Contracts
 - `auth/session.ts`: env credentials only; `verifyCredentials` **throws** on misconfiguration and runs a dummy bcrypt compare on username mismatch (no timing oracle); rate limit 5 failed attempts / 15 min per IP (in-memory, per-instance — soft in serverless) with a hard 10k-IP map cap; `isCrossOrigin(request)` is the CSRF guard used by every mutating admin API route.
@@ -21,7 +22,8 @@ All non-UI logic: content adapters, auth, markdown pipeline, SEO/AEO scoring, en
 ## Work Guidance
 - Keep `utils.ts` side-effect-free and node-import-free (client code imports it).
 - Schema changes in `content/types.ts` must be mirrored in both adapters, the defaults, and the admin `SettingsForm`.
-- Any new bulk surface that needs post *bodies* must go through `content/bodies.ts`, never `adapter.getPost()` in a loop — the cap is a rate-limit guard, not a style choice.
+- Any new bulk surface that needs post *bodies* must go through `content/bodies.ts`, never `adapter.getPost()` in a loop — the cap and the wall-clock budget are a rate-limit and timeout guard, not a style choice.
+- **`listPosts()` must fetch file contents with `mapWithConcurrency`, never a sequential `for … await`.** Frontmatter needs the file body, so listing N posts costs N content reads; doing them serially made every uncached page pay N round-trip latencies.
 
 ## Verification
 - `npx vitest run src/lib` (adapters, theme, seo-score, aeo-score, validate, backward-compat, utils tests).

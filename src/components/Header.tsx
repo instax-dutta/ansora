@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { SearchBox } from "./SearchBox";
 import { ThemeToggle } from "./ThemeToggle";
 import { getSiteConfig } from "@/lib/site-config";
 
@@ -25,11 +26,18 @@ export async function Header() {
             Home
           </Link>
           <Link
+            href="/topics"
+            className="rounded-lg px-3 py-2 text-sm font-medium text-ink-muted transition-colors hover:bg-surface-soft hover:text-ink"
+          >
+            Topics
+          </Link>
+          <Link
             href="/tags"
             className="rounded-lg px-3 py-2 text-sm font-medium text-ink-muted transition-colors hover:bg-surface-soft hover:text-ink"
           >
             Tags
           </Link>
+          <SearchBox />
           <a
             href="/rss.xml"
             title="RSS feed"

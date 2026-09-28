@@ -8,6 +8,7 @@ The **single** markdown rendering pipeline shared by the public site and the edi
 - `render.ts` — server-side `unified` → `rehype-stringify` + a link/image sanitization pass (`SAFE_URL` neutralizes `javascript:`/`data:` URLs)
 - `seo-score.ts` — 0–100 traditional on-page SEO score with a per-check checklist (+ `seo-score.fixtures.ts`)
 - `aeo-score.ts` — 0–100 AI **citability** score; the GEO instrument (+ `aeo-score.test.ts`)
+- `overlap.ts` — cross-post checks: `findCannibalization` (shared focus keyword / title overlap), `findOrphanWarning` (published post with no tags can never appear in a peer's related list), `monthsSince` (freshness; silent under 30 days so the dashboard badge stays meaningful)
 
 ## Local Contracts
 - **One pipeline for both renderers** — the editor preview renders through `render.ts` via `POST /api/admin/preview` (`src/components/admin/MarkdownPreview.tsx` debounces calls), so preview equals public render **by construction**. Never create a second rendering path.
@@ -18,6 +19,7 @@ The **single** markdown rendering pipeline shared by the public site and the edi
 - **`aeo-score.ts` must stay pure, synchronous and dependency-free.** It runs on every keystroke in the browser; a network call or an LLM there would make the number untrustworthy. Regexes and counts only.
 - **`aeo-score.ts` prose heuristics must read code-stripped text.** Dashes, filler phrasing and entity counts come from a `prose` copy with fenced blocks removed, so a shell snippet full of em dashes cannot fail a good post.
 - The AEO scorer treats keyword density as a **liability** (a check that "passes" when density is healthy) rather than a ranking factor. Do not reframe it as a positive signal.
+- `overlap.ts` is advisory, never blocking. Unlike a malformed `seo.canonicalUrl` (which is validated in `content/validate.ts` and *does* block, because a bad canonical can deindex a post), cannibalization and orphaning are judgement calls and must not stop a writer saving.
 
 ## Work Guidance
 - Add plugins to `pipeline.ts`; they automatically apply to both the public site and the editor preview (both go through `renderMarkdown`).

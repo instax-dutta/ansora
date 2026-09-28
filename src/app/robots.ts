@@ -15,6 +15,10 @@ import { getSiteConfig } from "@/lib/site-config";
  *   /admin  the login panel and dashboard
  *   /api    session-bearing JSON endpoints
  *   /md     the markdown content-negotiation mirror (duplicates the HTML routes)
+ *
+ * The search index is deliberately NOT disallowed: it is built from the same
+ * `isIndexable()` set as the sitemap, so it contains nothing that is not
+ * already public, and it is how a crawler can enumerate every post title.
  */
 export default async function robots(): Promise<MetadataRoute.Robots> {
   const config = await getSiteConfig();

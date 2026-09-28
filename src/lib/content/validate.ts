@@ -37,8 +37,33 @@ export function deriveSlug(meta: PostMeta, fallback = "untitled-post"): string {
 
 export class PayloadError extends Error {}
 
-/** Throw if a post is being published without required fields. */
+/**
+ * Reject a canonical URL that is not an absolute http(s) URL.
+ *
+ * This is a *blocking* check, unlike the scored SEO advice, because a
+ * malformed canonical does not merely rank badly: it tells a crawler to
+ * consolidate this page onto a URL that may not exist, which can deindex the
+ * post outright. Left unvalidated, a stray space silently breaks indexing with
+ * no feedback anywhere in the product.
+ */
+function isValidCanonical(value: string): boolean {
+  try {
+    const url = new URL(value);
+    return url.protocol === "http:" || url.protocol === "https:";
+  } catch {
+    return false;
+  }
+}
+
 export function assertPublishable(meta: PostMeta): void {
+  // Validated on every save, published or not, so a bad canonical is caught
+  // when it is typed rather than on the first publish.
+  const canonical = meta.seo.canonicalUrl.trim();
+  if (canonical && !isValidCanonical(canonical)) {
+    throw new PayloadError(
+      "Canonical URL must be a full http(s) URL, for example https://example.com/post. Leave it empty to use the post URL."
+    );
+  }
   if (!meta.published) return;
   if (!meta.title.trim()) {
     throw new PayloadError("A title is required before publishing.");

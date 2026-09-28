@@ -152,7 +152,7 @@ export default async function BlogPostPage({
   return (
     <div className="mx-auto w-full max-w-5xl px-4 py-10 sm:px-6 sm:py-14">
       <div className={showToc ? "lg:grid lg:grid-cols-[minmax(0,1fr)_250px] lg:gap-10" : ""}>
-        <article>
+        <article id="post-top">
           {/* Breadcrumb — must mirror the BreadcrumbList in the JSON-LD below */}
           <nav
             aria-label="Breadcrumb"
@@ -267,6 +267,22 @@ export default async function BlogPostPage({
 
           <ProseHtml html={bodyHtml} className="text-[1.05rem] leading-8" />
 
+          {/* Mobile table of contents. The sidebar version is `hidden lg:block`,
+              so without this every phone and tablet reader loses the outline
+              entirely. A <details> is the right shape: no JS, keyboard
+              accessible, and collapsed by default so it does not push the
+              article down the screen. */}
+          {showToc && (
+            <details className="mt-8 rounded-2xl border border-line bg-surface p-4 lg:hidden">
+              <summary className="cursor-pointer list-none text-xs font-semibold uppercase tracking-wider text-ink-muted [&::-webkit-details-marker]:hidden">
+                On this page
+              </summary>
+              <div className="mt-3 border-l border-line pl-4 text-sm">
+                <Toc items={toc} variant="embedded" />
+              </div>
+            </details>
+          )}
+
           <Sources sources={meta.sources} />
 
           {/* FAQ rendered from frontmatter (schema is injected via JSON-LD) */}
@@ -317,6 +333,18 @@ export default async function BlogPostPage({
           </aside>
         )}
       </div>
+
+      {/* Back to top: only rendered on posts long enough to be worth scrolling. */}
+      {wordCount > 1200 && (
+        <div className="mx-auto mt-12 w-full max-w-5xl border-t border-line pt-6 text-right">
+          <a
+            href="#post-top"
+            className="text-sm font-medium text-ink-muted transition-colors hover:text-brand"
+          >
+            Back to top
+          </a>
+        </div>
+      )}
 
       {/* Internal linking: the crawl graph needs post-to-post edges, otherwise
           anything past the first page of the index is orphaned. */}

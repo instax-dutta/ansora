@@ -14,6 +14,8 @@ interface EditorProps {
   post: Post | null;
   /** Site config, needed for the SERP/social previews. */
   config: SiteConfig;
+  /** Other published posts, for the cross-post conflict checks. */
+  siblingPosts?: PostMeta[];
 }
 
 function ToolbarButton({
@@ -89,7 +91,7 @@ const inputClass =
 const textareaClass =
   "w-full rounded-lg border border-line bg-paper px-3 py-2 text-sm text-ink outline-none transition-colors placeholder:text-ink-muted/60 focus:border-brand";
 
-export function PostEditor({ post, config }: EditorProps) {
+export function PostEditor({ post, config, siblingPosts = [] }: EditorProps) {
   const router = useRouter();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const isNew = post === null;
@@ -417,6 +419,7 @@ export function PostEditor({ post, config }: EditorProps) {
             content={body}
             config={config}
             faqCount={faq.filter((f) => f.question && f.answer).length}
+            siblingPosts={siblingPosts}
           />
 
           <section className="space-y-4">

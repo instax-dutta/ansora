@@ -56,6 +56,10 @@ export function tagsUrl(config: SiteConfig): string {
   return `${base(config)}/tags`;
 }
 
+export function topicsUrl(config: SiteConfig): string {
+  return `${base(config)}/topics`;
+}
+
 /* ------------------------------ Entity ids ------------------------------- */
 
 export const siteId = (config: SiteConfig) => `${base(config)}/#website`;

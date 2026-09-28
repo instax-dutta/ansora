@@ -12,6 +12,7 @@
 import matter from "gray-matter";
 import { Octokit } from "octokit";
 import { TtlCache } from "./cache";
+import { mapWithConcurrency } from "./concurrency";
 import type { ContentAdapter } from "./index";
 import { isSafeSlug } from "./slug";
 import type { Post, PostMeta, SiteConfig } from "./types";
@@ -136,10 +137,19 @@ export class GitHubApiAdapter implements ContentAdapter {
           t.path.endsWith(".md")
       ) ?? [];
 
+    // Frontmatter requires the file body, so listing N posts costs N content
+    // reads on top of the single tree call. Doing that sequentially costs N
+    // round-trip latencies — with a few dozen posts that is the dominant cost
+    // of any uncached page, and it is why the home page was measurably slower
+    // than every ISR route. Fetch them with bounded concurrency instead:
+    // latency drops by roughly the concurrency factor, while the cap keeps
+    // this a good citizen against the API's rate limit.
+    const rawPosts = await mapWithConcurrency(files, 8, (file) =>
+      file.path ? this.getFileRaw(file.path) : Promise.resolve(null)
+    );
+
     const posts: PostMeta[] = [];
-    for (const file of files) {
-      if (!file.path) continue;
-      const raw = await this.getFileRaw(file.path);
+    for (const raw of rawPosts) {
       if (!raw) continue;
       const { data } = matter(raw.content);
       posts.push(normalizeFrontmatter(data as Record<string, unknown>));

@@ -28,8 +28,17 @@ export async function Footer() {
           <Link href="/" className="text-ink-muted transition-colors hover:text-brand">
             Home
           </Link>
+          <Link href="/blog" className="text-ink-muted transition-colors hover:text-brand">
+            All posts
+          </Link>
+          <Link href="/topics" className="text-ink-muted transition-colors hover:text-brand">
+            Topics
+          </Link>
           <Link href="/tags" className="text-ink-muted transition-colors hover:text-brand">
             Tags
+          </Link>
+          <Link href="/about" className="text-ink-muted transition-colors hover:text-brand">
+            About
           </Link>
           <a href="/rss.xml" className="text-ink-muted transition-colors hover:text-brand">
             RSS feed

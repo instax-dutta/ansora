@@ -11,11 +11,18 @@ export default async function EditPostPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const [post, config] = await Promise.all([
+  const [post, config, siblings] = await Promise.all([
     getAdapter().getPost(slug),
     getSiteConfig(),
+    getAdapter().listPosts(),
   ]);
   if (!post) notFound();
 
-  return <PostEditor post={post} config={config} />;
+  return (
+    <PostEditor
+      post={post}
+      config={config}
+      siblingPosts={siblings.filter((p) => p.published && p.slug !== slug)}
+    />
+  );
 }
