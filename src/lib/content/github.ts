@@ -141,10 +141,16 @@ export class GitHubApiAdapter implements ContentAdapter {
     // reads on top of the single tree call. Doing that sequentially costs N
     // round-trip latencies — with a few dozen posts that is the dominant cost
     // of any uncached page, and it is why the home page was measurably slower
-    // than every ISR route. Fetch them with bounded concurrency instead:
-    // latency drops by roughly the concurrency factor, while the cap keeps
-    // this a good citizen against the API's rate limit.
-    const rawPosts = await mapWithConcurrency(files, 8, (file) =>
+    // than every ISR route.
+    //
+    // The width is a latency/limits trade-off, and the measurement drove it:
+    // 32 posts at width 8 is 1 tree call + 4 waves = 5 sequential steps
+    // (~104ms each on a real deployment, so ~520ms of app time). At 16 it is
+    // 3 steps. GitHub's documented ceiling is 100 concurrent requests per
+    // client, so 16 is a wide margin - but do not raise this casually, because
+    // tripping a *secondary* rate limit looks like random 403s and costs more
+    // than the latency it would save.
+    const rawPosts = await mapWithConcurrency(files, 16, (file) =>
       file.path ? this.getFileRaw(file.path) : Promise.resolve(null)
     );
 

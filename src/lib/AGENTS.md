@@ -11,7 +11,7 @@ All non-UI logic: content adapters, auth, markdown pipeline, SEO/AEO scoring, en
 - `site-config.ts` — `getSiteConfig()` with 30 s TTL; `SITE_URL` seeds `baseUrl` until changed in admin
 - `seo/` — the AI-search layer → see `seo/AGENTS.md`
 - `utils.ts` — slugify, `tagSlug`/`resolveTagFromSlug`, dates, word counts, escapeXml, stripMarkdown, truncate (pure, imported by client code)
-- `content/concurrency.ts` — `mapWithConcurrency`, the bounded-parallelism helper used by the GitHub adapter
+- `content/concurrency.ts` — `mapWithConcurrency`, the bounded-parallelism helper used by the GitHub adapter at width 16
 
 ## Local Contracts
 - `auth/session.ts`: env credentials only; `verifyCredentials` **throws** on misconfiguration and runs a dummy bcrypt compare on username mismatch (no timing oracle); rate limit 5 failed attempts / 15 min per IP (in-memory, per-instance — soft in serverless) with a hard 10k-IP map cap; `isCrossOrigin(request)` is the CSRF guard used by every mutating admin API route.
