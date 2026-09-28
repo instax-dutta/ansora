@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Figtree, Fraunces, Geist_Mono } from "next/font/google";
 import { getSiteConfig } from "@/lib/site-config";
+import { withFeeds } from "@/lib/seo/metadata";
 import { buildThemeCss } from "@/lib/theme";
 import "./globals.css";
 
@@ -33,6 +34,12 @@ export async function generateMetadata(): Promise<Metadata> {
     title: { default: config.title, template: `%s · ${config.title}` },
     description: config.description,
     icons: { icon: "/icon.svg" },
+    authors: [{ name: config.author, url: `${baseUrl}/about` }],
+    // Feed autodiscovery: without these <link rel="alternate"> elements a
+    // reader has to be pointed at /rss.xml by hand. Kept here as the default
+    // for routes that declare no metadata of their own — pages that set their
+    // own `alternates` must use `withFeeds()` or they will replace these.
+    alternates: withFeeds(config, "/"),
     openGraph: {
       type: "website",
       siteName: config.title,

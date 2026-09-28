@@ -47,6 +47,41 @@ const nextConfig: NextConfig = {
   async headers() {
     return [{ source: "/:path*", headers: SECURITY_HEADERS }];
   },
+  /**
+   * Markdown content negotiation.
+   *
+   * An agent that asks for `text/markdown` gets the page's markdown source
+   * instead of its HTML. That is lossless, far smaller, and saves the agent
+   * from scraping navigation and inline styles out of the markup.
+   *
+   * Two deliberate constraints:
+   * - `beforeFiles`, so the rewrite wins over the filesystem routes. With
+   *   `afterFiles` the HTML page would always match first and never negotiate.
+   * - Enumerated per-route rather than a `/:path*` catch-all, so an
+   *   `Accept: text/markdown` request to `/admin` or `/api` can never be
+   *   redirected into the public mirror.
+   *
+    * The trigger requires `text/markdown` to be *explicitly* present, so a
+    * wildcard Accept header from curl, a monitor or a health check still
+    * gets HTML.
+    */
+  async rewrites() {
+    const markdown: { type: "header"; key: string; value: string }[] = [
+      { type: "header", key: "accept", value: ".*text/markdown.*" },
+    ];
+    return {
+      beforeFiles: [
+        { source: "/", has: markdown, destination: "/md" },
+        { source: "/blog", has: markdown, destination: "/md/blog" },
+        { source: "/blog/:slug", has: markdown, destination: "/md/blog/:slug" },
+        { source: "/tags", has: markdown, destination: "/md/tags" },
+        { source: "/tags/:tag", has: markdown, destination: "/md/tags/:tag" },
+        { source: "/about", has: markdown, destination: "/md/about" },
+      ],
+      afterFiles: [],
+      fallback: [],
+    };
+  },
 };
 
 export default nextConfig;

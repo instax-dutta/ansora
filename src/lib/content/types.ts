@@ -22,6 +22,19 @@ export const faqItemSchema = z.object({
 });
 export type FaqItem = z.infer<typeof faqItemSchema>;
 
+/**
+ * A cited source rendered as a visible attribution list. Attribution is the
+ * single strongest GEO lever, so sources get first-class structure rather than
+ * being left as anonymous links in the body.
+ */
+export const sourceItemSchema = z.object({
+  title: z.string().default(""),
+  url: z.string().default(""),
+  author: z.string().default(""),
+  year: z.string().default(""),
+});
+export type SourceItem = z.infer<typeof sourceItemSchema>;
+
 export const postMetaSchema = z.object({
   title: z.string().default(""),
   slug: z.string().default(""),
@@ -29,8 +42,20 @@ export const postMetaSchema = z.object({
   date: z.string().default(() => new Date().toISOString()),
   /** ISO date string, set when a post is edited after publication. */
   updated: z.string().optional(),
+  /** Human-readable reason for the last update; surfaced in the post header. */
+  updatedReason: z.string().default(""),
   excerpt: z.string().default(""),
+  /**
+   * 40-60 word direct answer rendered as a callout above the fold and targeted
+   * by the `speakable` schema property. The definition-block pattern is what
+   * AI citability scorers reward most, so it gets its own field.
+   */
+  answer: z.string().default(""),
+  /** 3-5 bullet strings rendered as a "Key takeaways" block. */
+  takeaways: z.array(z.string()).default([]),
   coverImage: z.string().default(""),
+  /** Alt text for the cover image. Falls back to the post title. */
+  coverImageAlt: z.string().default(""),
   tags: z.array(z.string()).default([]),
   published: z.boolean().default(false),
   /** Optional focus keyword used by the on-page SEO scorer. */
@@ -42,6 +67,7 @@ export const postMetaSchema = z.object({
     noIndex: false,
   }),
   faq: z.array(faqItemSchema).default([]),
+  sources: z.array(sourceItemSchema).default([]),
 });
 export type PostMeta = z.infer<typeof postMetaSchema>;
 
@@ -91,8 +117,14 @@ export function serializeFrontmatter(meta: PostMeta): Record<string, unknown> {
     slug: meta.slug,
     date: meta.date,
     ...(meta.updated ? { updated: meta.updated } : {}),
+    ...(meta.updatedReason ? { updatedReason: meta.updatedReason } : {}),
     excerpt: meta.excerpt,
+    ...(meta.answer ? { answer: meta.answer } : {}),
+    ...(meta.takeaways.length
+      ? { takeaways: meta.takeaways.filter((t) => t.trim()) }
+      : {}),
     ...(meta.coverImage ? { coverImage: meta.coverImage } : {}),
+    ...(meta.coverImageAlt ? { coverImageAlt: meta.coverImageAlt } : {}),
     ...(meta.tags.length ? { tags: meta.tags } : {}),
     published: meta.published,
     ...(meta.focusKeyword ? { focusKeyword: meta.focusKeyword } : {}),
@@ -103,6 +135,9 @@ export function serializeFrontmatter(meta: PostMeta): Record<string, unknown> {
       ? { seo: meta.seo }
       : {}),
     ...(meta.faq.length ? { faq: meta.faq } : {}),
+    ...(meta.sources.length
+      ? { sources: meta.sources.filter((s) => s.title.trim() || s.url.trim()) }
+      : {}),
   };
 }
 
@@ -171,6 +206,10 @@ export const siteConfigSchema = z.object({
       message: "Base URL must be an absolute http(s) URL.",
     }),
   author: z.string().default("Ansora Author"),
+  /** Short bio for the author entity, rendered on /about. */
+  authorBio: z.string().default(""),
+  /** Role or credential line, e.g. "Staff engineer, ex-…". */
+  authorRole: z.string().default(""),
   defaultOgImage: z.string().default(""),
   social: z
     .object({
@@ -188,6 +227,8 @@ export const DEFAULT_SITE_CONFIG: SiteConfig = {
   description: "A quiet, self-hosted blog.",
   baseUrl: "http://localhost:3000",
   author: "Ansora Author",
+  authorBio: "",
+  authorRole: "",
   defaultOgImage: "",
   social: { twitter: "", github: "", linkedin: "" },
   theme: DEFAULT_THEME_CONFIG,

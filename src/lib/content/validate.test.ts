@@ -6,13 +6,18 @@ const META: PostMeta = {
   title: "Hello",
   slug: "hello",
   date: "2026-01-15",
+  updatedReason: "",
   excerpt: "An excerpt.",
+  answer: "",
+  takeaways: [],
   coverImage: "",
+  coverImageAlt: "",
   tags: ["test"],
   published: true,
   focusKeyword: "hello",
   seo: { metaTitle: "", metaDescription: "", canonicalUrl: "", noIndex: false },
   faq: [],
+  sources: [],
 };
 
 const POST: Post = {

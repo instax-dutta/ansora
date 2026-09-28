@@ -4,14 +4,16 @@ import Link from "next/link";
 import { useCallback, useEffect, useEffectEvent, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { MarkdownPreview } from "./MarkdownPreview";
-import type { Post, PostMeta } from "@/lib/content/types";
+import type { Post, PostMeta, SiteConfig } from "@/lib/content/types";
 import { slugify } from "@/lib/utils";
 import { ImageDialog } from "./ImageDialog";
-import { SeoPanel } from "./SeoPanel";
+import { ScorePanel } from "./ScorePanel";
 import { ShortcutPanel } from "./ShortcutPanel";
 
 interface EditorProps {
   post: Post | null;
+  /** Site config, needed for the SERP/social previews. */
+  config: SiteConfig;
 }
 
 function ToolbarButton({
@@ -46,13 +48,18 @@ const BLANK_META: PostMeta = {
   title: "",
   slug: "",
   date: new Date().toISOString(),
+  updatedReason: "",
   excerpt: "",
+  answer: "",
+  takeaways: [],
   coverImage: "",
+  coverImageAlt: "",
   tags: [],
   published: false,
   focusKeyword: "",
   seo: { metaTitle: "", metaDescription: "", canonicalUrl: "", noIndex: false },
   faq: [],
+  sources: [],
 };
 
 function Field({
@@ -82,7 +89,7 @@ const inputClass =
 const textareaClass =
   "w-full rounded-lg border border-line bg-paper px-3 py-2 text-sm text-ink outline-none transition-colors placeholder:text-ink-muted/60 focus:border-brand";
 
-export function PostEditor({ post }: EditorProps) {
+export function PostEditor({ post, config }: EditorProps) {
   const router = useRouter();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const isNew = post === null;
@@ -405,13 +412,10 @@ export function PostEditor({ post }: EditorProps) {
 
         {/* Sidebar */}
         <aside className="hidden w-80 shrink-0 space-y-5 overflow-y-auto border-l border-line bg-surface p-4 lg:block xl:w-96">
-          <SeoPanel
-            title={meta.title}
-            excerpt={meta.excerpt}
-            focusKeyword={meta.focusKeyword}
-            slug={meta.slug}
+          <ScorePanel
+            meta={meta}
             content={body}
-            metaDescription={meta.seo.metaDescription}
+            config={config}
             faqCount={faq.filter((f) => f.question && f.answer).length}
           />
 
@@ -483,7 +487,7 @@ export function PostEditor({ post }: EditorProps) {
                 </button>
               </div>
             </Field>
-            <Field label="Excerpt" htmlFor="post-excerpt" hint="Used for meta descriptions and cards — make it a quotable answer.">
+            <Field label="Excerpt" htmlFor="post-excerpt" hint="Used for meta descriptions and cards. Say it as a declarative answer, not a teaser.">
               <textarea
                 id="post-excerpt"
                 value={meta.excerpt}
@@ -493,7 +497,44 @@ export function PostEditor({ post }: EditorProps) {
                 className={textareaClass}
               />
             </Field>
-            <Field label="Cover image URL" htmlFor="post-cover">
+            <Field
+              label="Direct answer (40-60 words)"
+              htmlFor="post-answer"
+              hint="The single biggest citability lever. Answer the question your title asks, in your own words, no preamble. Rendered as a callout above the fold and read aloud by voice assistants."
+            >
+              <textarea
+                id="post-answer"
+                value={meta.answer}
+                onChange={(e) => updateMeta({ answer: e.target.value })}
+                rows={4}
+                placeholder="Self-hosting a blog on a small VPS is…"
+                className={textareaClass}
+              />
+            </Field>
+            <div>
+              <label
+                htmlFor="post-takeaways"
+                className="mb-1 block text-xs font-semibold uppercase tracking-wider text-ink-muted"
+              >
+                Key takeaways
+              </label>
+              <textarea
+                id="post-takeaways"
+                value={meta.takeaways.join("\n")}
+                onChange={(e) =>
+                  updateMeta({
+                    takeaways: e.target.value.split("\n"),
+                  })
+                }
+                rows={4}
+                placeholder={"One per line\nThree to five works best"}
+                className={textareaClass}
+              />
+              <p className="mt-1 text-xs text-ink-muted/80">
+                One bullet per line. Rendered as a Key takeaways block.
+              </p>
+            </div>
+            <Field label="Cover image URL" htmlFor="post-cover" hint="External URL only. Doubles as the social card image.">
               <input
                 id="post-cover"
                 type="url"
@@ -503,6 +544,22 @@ export function PostEditor({ post }: EditorProps) {
                 className={inputClass}
               />
             </Field>
+            {meta.coverImage && (
+              <Field
+                label="Cover image alt text"
+                htmlFor="post-cover-alt"
+                hint="Describe the image for screen readers and image search. Falls back to the post title."
+              >
+                <input
+                  id="post-cover-alt"
+                  type="text"
+                  value={meta.coverImageAlt}
+                  onChange={(e) => updateMeta({ coverImageAlt: e.target.value })}
+                  placeholder={meta.title || "Describe the cover image"}
+                  className={inputClass}
+                />
+              </Field>
+            )}
             <Field label="Tags (comma separated)" htmlFor="post-tags">
               <input
                 id="post-tags"
@@ -526,7 +583,11 @@ export function PostEditor({ post }: EditorProps) {
             <h2 className="text-xs font-semibold uppercase tracking-wider text-ink-muted">
               SEO &amp; AEO
             </h2>
-            <Field label="Focus keyword" htmlFor="focus-keyword" hint="Powers most of the SEO checks above.">
+            <Field
+              label="Focus keyword"
+              htmlFor="focus-keyword"
+              hint="Used for the SEO checks. Optional for citability — keyword stuffing actively hurts AI visibility, so don't force it."
+            >
               <input
                 id="focus-keyword"
                 type="text"
@@ -536,7 +597,11 @@ export function PostEditor({ post }: EditorProps) {
                 className={inputClass}
               />
             </Field>
-            <Field label="Meta title" htmlFor="meta-title" hint="Falls back to the title.">
+            <Field
+              label="Meta title"
+              htmlFor="meta-title"
+              hint="Falls back to the title. Aim for 60 characters or fewer."
+            >
               <input
                 id="meta-title"
                 type="text"
@@ -565,6 +630,20 @@ export function PostEditor({ post }: EditorProps) {
                 className={inputClass}
               />
             </Field>
+            <Field
+              label="Why it was updated"
+              htmlFor="updated-reason"
+              hint="Shown next to the Updated date. An explained refresh reads as maintained rather than silently re-stamped."
+            >
+              <input
+                id="updated-reason"
+                type="text"
+                value={meta.updatedReason}
+                onChange={(e) => updateMeta({ updatedReason: e.target.value })}
+                placeholder="e.g. corrected the pricing table"
+                className={inputClass}
+              />
+            </Field>
             <label className="flex cursor-pointer items-center justify-between rounded-lg border border-line bg-paper px-3 py-2.5">
               <span className="text-sm font-medium text-ink">No-index this post</span>
               <input
@@ -574,6 +653,12 @@ export function PostEditor({ post }: EditorProps) {
                 className="h-4 w-4 accent-brand"
               />
             </label>
+            {meta.seo.noIndex && (
+              <p className="-mt-2 text-xs text-ink-muted/80">
+                Hidden from search engines, the sitemap, RSS, the JSON feed and
+                llms.txt. Still visible on the site itself.
+              </p>
+            )}
           </section>
 
           <section className="space-y-3">
@@ -625,6 +710,102 @@ export function PostEditor({ post }: EditorProps) {
               className="w-full rounded-lg border border-dashed border-line-strong px-3 py-2 text-sm font-medium text-ink-muted transition-colors hover:border-brand hover:text-brand"
             >
               + Add question
+            </button>
+          </section>
+
+          <section className="space-y-3">
+            <h2 className="text-xs font-semibold uppercase tracking-wider text-ink-muted">
+              Sources{" "}
+              <span className="font-normal normal-case">
+                (attribution is the strongest citability signal there is)
+              </span>
+            </h2>
+            {meta.sources.map((item, index) => (
+              <div
+                key={index}
+                className="space-y-2 rounded-xl border border-line bg-paper p-3"
+              >
+                <Field label={`Source ${index + 1} title`} htmlFor={`src-t-${index}`}>
+                  <input
+                    id={`src-t-${index}`}
+                    type="text"
+                    value={item.title}
+                    onChange={(e) => {
+                      const next = [...meta.sources];
+                      next[index] = { ...item, title: e.target.value };
+                      updateMeta({ sources: next });
+                    }}
+                    placeholder="Title of the paper, guide or post"
+                    className={inputClass}
+                  />
+                </Field>
+                <Field label="URL" htmlFor={`src-u-${index}`}>
+                  <input
+                    id={`src-u-${index}`}
+                    type="url"
+                    value={item.url}
+                    onChange={(e) => {
+                      const next = [...meta.sources];
+                      next[index] = { ...item, url: e.target.value };
+                      updateMeta({ sources: next });
+                    }}
+                    placeholder="https://…"
+                    className={inputClass}
+                  />
+                </Field>
+                <div className="grid grid-cols-2 gap-2">
+                  <Field label="Author / org" htmlFor={`src-a-${index}`}>
+                    <input
+                      id={`src-a-${index}`}
+                      type="text"
+                      value={item.author}
+                      onChange={(e) => {
+                        const next = [...meta.sources];
+                        next[index] = { ...item, author: e.target.value };
+                        updateMeta({ sources: next });
+                      }}
+                      placeholder="Ida Labs"
+                      className={inputClass}
+                    />
+                  </Field>
+                  <Field label="Year" htmlFor={`src-y-${index}`}>
+                    <input
+                      id={`src-y-${index}`}
+                      type="text"
+                      value={item.year}
+                      onChange={(e) => {
+                        const next = [...meta.sources];
+                        next[index] = { ...item, year: e.target.value };
+                        updateMeta({ sources: next });
+                      }}
+                      placeholder="2026"
+                      className={inputClass}
+                    />
+                  </Field>
+                </div>
+                <button
+                  type="button"
+                  onClick={() =>
+                    updateMeta({
+                      sources: meta.sources.filter((_, i) => i !== index),
+                    })
+                  }
+                  className="text-xs font-medium text-ink-muted transition-colors hover:text-brand"
+                >
+                  Remove source
+                </button>
+              </div>
+            ))}
+            <button
+              type="button"
+              onClick={() =>
+                updateMeta({
+                  sources: [...meta.sources, { title: "", url: "", author: "", year: "" }],
+                })
+              }
+              className="w-full rounded-lg border border-dashed border-line-strong px-3 py-2 text-sm font-medium text-ink-muted transition-colors hover:border-brand hover:text-brand"
+            >
+              + Add source
             </button>
           </section>
         </aside>

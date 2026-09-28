@@ -112,20 +112,29 @@ describe("POST /api/admin/login", () => {
     }
   });
 
-  it("rate-limits after five failed attempts from the same IP", async () => {
-    const ip = "198.51.100.99";
-    for (let i = 0; i < 5; i++) {
-      const res = await POST(
-        postJson({ username: "admin", password: "wrong" }, ip)
+  it(
+    "rate-limits after five failed attempts from the same IP",
+    async () => {
+      const ip = "198.51.100.99";
+      for (let i = 0; i < 5; i++) {
+        const res = await POST(
+          postJson({ username: "admin", password: "wrong" }, ip)
+        );
+        expect(res.status).toBe(401);
+      }
+      // Correct credentials are still throttled — the budget is per-IP.
+      const blocked = await POST(
+        postJson({ username: "admin", password: "testpass123" }, ip)
       );
-      expect(res.status).toBe(401);
-    }
-    // Correct credentials are still throttled — the budget is per-IP.
-    const blocked = await POST(
-      postJson({ username: "admin", password: "testpass123" }, ip)
-    );
-    expect(blocked.status).toBe(429);
-  });
+      expect(blocked.status).toBe(429);
+    },
+    // Six real bcrypt compares at a deliberately high cost factor. Vitest's
+    // 5 s default is not enough when the whole suite runs in parallel, and a
+    // flake here blocks the Docker publish (and therefore production deploys).
+    // This only widens the timeout — the throttle assertions are unchanged and
+    // must not be weakened.
+    30_000
+  );
 
   it("issues a token that passes real verification against the session lib", async () => {
     const token = await createSessionToken();

@@ -15,6 +15,39 @@ export function slugify(input: string): string {
 /** Valid slug: lowercased words separated by single hyphens. */
 export const SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 
+/**
+ * URL form of a tag, used for `/tags/<slug>` routes.
+ *
+ * Tags are stored and displayed exactly as the author typed them, so this is a
+ * pure URL concern. Tags that are already URL-safe (the overwhelming majority)
+ * map to themselves, which is what keeps existing tag URLs working. Tags with
+ * spaces or uppercase previously produced raw URLs; those old URLs still
+ * resolve via `resolveTagFromSlug`, and canonicalize to the normalized form.
+ */
+export function tagSlug(tag: string): string {
+  let decoded = tag;
+  try {
+    decoded = decodeURIComponent(tag);
+  } catch {
+    // Malformed percent-encoding: fall back to the raw string rather than throw.
+  }
+  return slugify(decoded);
+}
+
+/**
+ * Find the raw tag a `/tags/<slug>` URL refers to, or null when the slug
+ * matches no tag. Case- and encoding-insensitive, so legacy tag URLs
+ * (`/tags/SEO`, `/tags/Search%20Engine%20Optimization`) keep resolving.
+ */
+export function resolveTagFromSlug(rawTags: string[], slug: string): string | null {
+  const target = tagSlug(slug);
+  if (!target) return null;
+  for (const tag of rawTags) {
+    if (tagSlug(tag) === target) return tag;
+  }
+  return null;
+}
+
 /** Words in a string (markdown bodies included — code fences count, acceptable). */
 export function countWords(text: string): number {
   return text.trim().split(/\s+/).filter(Boolean).length;

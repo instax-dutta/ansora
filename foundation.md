@@ -32,8 +32,9 @@ credentials come from environment variables.
 4. **Every save must be a commit**, but **no-op saves must not create commits** (both adapters guard this — preserve it).
 5. **Drafts must never be served publicly** — unpublished posts 404 on every public route.
 6. **No plaintext passwords ever** — only `ADMIN_PASSWORD_HASH` (bcrypt) in env vars; never log credentials.
-7. **No broken SEO/AEO defaults.** Metadata, JSON-LD, RSS, sitemap, robots.txt, `llms.txt` are non-negotiable output.
+7. **No broken SEO/AEO/GEO defaults.** Metadata, the JSON-LD entity graph, canonical URLs, RSS, JSON Feed, sitemap, robots.txt, `llms.txt`, `llms-full.txt` and markdown content negotiation are non-negotiable output. `seo.noIndex` must be honored on every machine-discovery surface.
 8. **Components use the theme tokens** (`bg-paper`, `text-ink`, `bg-brand`, …). All palette hex values live in exactly two places: the presets in `src/lib/theme.ts` and the warm fallback defaults in `globals.css` — don't add hex anywhere else (see §6.4).
+9. **Backward compatibility is a product requirement.** Ansora runs live blogs whose markdown files and URLs cannot be migrated. Content-model changes must be additive, defaulted, and omitted when empty; URL changes must keep old URLs resolving. See `src/lib/content/backward-compat.test.ts`.
 
 ## 3. Tech stack
 
@@ -91,11 +92,25 @@ interface ContentAdapter {
 - `extractToc` builds h2/h3 TOC with the same ids rehype-slug generates; shown for posts > 800 words with ≥ 2 headings.
 - `scanHeadings` is a cheap regex scan for the SEO scorer (code fences stripped first).
 
-### 4.4 SEO / AEO surface (`src/lib/seo/`, app routes)
+### 4.4 SEO / AEO / GEO surface (`src/lib/seo/`, app routes)
 
-- `BlogPosting` JSON-LD on every post (+ `FAQPage` when `faq` frontmatter exists) via `src/lib/seo/jsonld.ts`.
-- Generated routes: `/rss.xml`, `/sitemap.xml`, `/robots.txt`, `/llms.txt`, canonical URLs, Open Graph + Twitter cards.
-- **On-page SEO/AEO scorer** in the editor (`src/lib/markdown/seo-score.ts`): 0–100 weighted composite with a real checklist (title/meta length, focus keyword placement, heading hierarchy, thin content, readability, links, image alt, FAQ presence). It's the differentiator — keep it honest, no stubs.
+The governing idea: **AI engines do not just read pages, they assemble an entity graph.** A post that names an author nobody can resolve is weaker evidence than one that links to a described `Person` node with `sameAs` profiles.
+
+- **Entity graph** (`src/lib/seo/jsonld.ts`): every page emits a single self-contained `@graph` containing four site entities (`WebSite` `#website`, `Organization` `#organization`, `Person` `#author`, `Blog` `#blog`) plus its own page entity, cross-referenced by `@id`. `sameAs` is built from `config.social` and filtered to absolute http(s) values. A post's `author`/`publisher` resolve to `#author`/`#organization` on the same page — never a dangling `{ Person, name }`.
+- **Page graphs**: `buildPostGraph` (BlogPosting + BreadcrumbList + optional FAQPage + `speakable`), `buildListingGraph`, `buildTagGraph`, `buildTagsIndexGraph`, `buildAboutGraph`. Structured data always mirrors *visible* content: the `BreadcrumbList` has a rendered breadcrumb, `speakable` cssSelectors (`.post-answer`, `.post-faq`) only exist when those blocks render.
+- **Indexability policy** (`src/lib/seo/publish.ts`): `isIndexable(post)` = `published && !seo.noIndex`. Two deliberately separate gates — `published` is human visibility, `noIndex` is search visibility. Every machine-discovery surface uses it: sitemap, RSS, JSON Feed, llms.txt, llms-full.txt, related/neighbour links.
+- **Generated routes**: `/rss.xml`, `/feed.json` (JSON Feed 1.1), `/sitemap.xml`, `/robots.txt`, `/llms.txt`, `/llms-full.txt`, plus `/blog`, `/about`.
+- **Markdown content negotiation**: an `Accept: text/markdown` request to a public route is rewritten (`beforeFiles` in `next.config.ts`) to the `/md/*` mirror, which serves the page's markdown source with YAML frontmatter and `X-Robots-Tag: noindex`. Rewrites are enumerated per public route so `/admin` and `/api` can never be intercepted.
+- **robots.txt posture**: a single permissive `*` group, no bot-specific disallow. Blocking GPTBot / PerplexityBot / ClaudeBot / Google-Extended / Bingbot would make those engines unable to cite the site. Only `/admin`, `/api`, `/md` are disallowed.
+- **Metadata rule**: Next 16 *replaces* `alternates` rather than merging it, so every route returning `alternates` must use `withFeeds(config, canonical)` from `src/lib/seo/metadata.ts` or it silently drops feed autodiscovery. Titles that must not be re-templated use `title.absolute`.
+- **Two scorers, never merged**:
+  - `src/lib/markdown/seo-score.ts` — 0-100 traditional on-page SEO (title/meta length, focus keyword placement, heading hierarchy, thin content, readability, links, image alt, FAQ presence).
+  - `src/lib/markdown/aeo-score.ts` — 0-100 AI **citability**: direct answer, answer-first opening, definition pattern, a self-contained 100-200 word passage, takeaways, cited sources, quantified statistics, attribution, first-hand experience, named entities, question-shaped subheading, table/list structure, depth, plus two liability checks (keyword density over 2.5%, filler phrasing and dash-heavy rhythm).
+  - They are reported side by side in `components/admin/ScorePanel.tsx` because keyword placement barely moves citability and keyword stuffing actively *hurts* it. Do not average them.
+  - `src/lib/seo/preview.ts` powers the live SERP and social-card previews from the exact values that will ship.
+- **Citable content fields** (optional frontmatter, all additive): `answer`, `takeaways`, `sources`, `updatedReason`, `coverImageAlt`.
+- **Internal linking**: `src/lib/content/related.ts` gives every post prev/next neighbours plus tag-overlap related posts, so the crawl graph is not one-directional from the home page.
+- **Bulk body loading**: `src/lib/content/bodies.ts`. `listPosts()` returns frontmatter only, and the GitHub adapter already fetches every post file to parse it — so any surface needing bodies pays a second round of per-post requests. All such surfaces go through `bodies.ts` with an explicit cap (RSS 10, feed.json 20, llms-full.txt 100).
 
 ### 4.5 Theme system (added later — do not regress)
 
@@ -117,21 +132,26 @@ scripts/
   verify-serverless.sh    end-to-end serverless harness (snapshots + restores repo)
 src/
   app/
-    layout.tsx            root layout: fonts, metadata, THEME INJECTION
+    layout.tsx            root layout: fonts, metadata, feed links, THEME INJECTION
     globals.css           Tailwind v4, live theme tokens, prose-warm styles
-    (public)/             public site: /, /blog/[slug], /tags, /tags/[tag]
+    (public)/             public site: /, /blog, /blog/[slug], /tags, /tags/[tag], /about
     admin/                admin: login + (dashboard)/{posts,new,edit,settings}
-    api/admin/            API routes: login, logout, posts, posts/[slug], settings
-    rss.xml, sitemap.ts, robots.ts, llms.txt, not-found, error, global-error
-  components/             shared + admin components (Header, PostCard, PostEditor, …)
+    api/admin/            API routes: login, logout, posts, posts/[slug], settings, preview
+    api/seo-routes.test.ts  integration tests for the machine-discovery surfaces
+    rss.xml, feed.json, sitemap.ts, robots.ts
+    llms.txt/, llms-full.txt/, md/     machine-readable + markdown mirror
+    not-found, error, global-error
+  components/             shared + admin components (Header, PostCard, PostEditor, JsonLd, …)
   lib/
-    content/              adapter pattern: index, local-git, github, types, cache
+    content/              adapter pattern: index, local-git, github, types, cache,
+                          bodies (bounded body loading), related (crawl graph)
     auth/session.ts       JWT + bcrypt + rate limiting
-    markdown/             pipeline, render, seo-score (+ fixtures)
-    seo/jsonld.ts         structured data builders
+    markdown/             pipeline, render, seo-score, aeo-score (+ fixtures)
+    seo/                  jsonld (entity graph), publish (indexability policy),
+                          markdown-doc, metadata, preview
     site-config.ts        getSiteConfig() — 30 s TTL cache, SITE_URL seeds baseUrl
     theme.ts              presets + buildThemeCss (THEME ENGINE)
-    utils.ts              slugify, dates, word counts, escapeXml, stripMarkdown
+    utils.ts              slugify, tagSlug, dates, word counts, escapeXml, stripMarkdown
   test/setup.ts           vitest setup: RTL cleanup + rAF polyfill
 ```
 
@@ -145,9 +165,13 @@ title: string            # required
 slug: string             # required, unique, lower-kebab-case (SLUG_PATTERN)
 date: ISO-date           # required
 updated: ISO-date        # optional; stamped when a published post is edited
+updatedReason: string    # optional; shown next to the Updated date
 excerpt: string          # required to publish (meta description + cards)
+answer: string           # optional; 40-60 word direct answer → callout + speakable
+takeaways: [string]      # optional; 3-5 bullets → "Key takeaways" block
 coverImage: url          # optional, external URL (no uploads!)
-tags: [string]           # optional
+coverImageAlt: string    # optional; falls back to the title
+tags: [string]           # optional; stored verbatim, normalized only for URLs
 published: boolean       # default false
 focusKeyword: string     # optional; powers the SEO scorer
 seo:
@@ -158,16 +182,24 @@ seo:
 faq:                     # optional; emits FAQPage JSON-LD
   - question: string
     answer: string
+sources:                 # optional; rendered as attributed citations
+  - title: string
+    url: string
+    author: string
+    year: string
 ---
 ```
 
 - Reads are lenient (defaults applied); writes are normalized via `serializeFrontmatter` (canonical key order). `cleanUndefined` strips `undefined` before dumping (js-yaml refuses them).
+- **Every field after v0.1 is optional, defaulted, and omitted on write when empty.** Opening and re-saving a pre-existing post must not add empty keys to the author's content repo. `src/lib/content/backward-compat.test.ts` locks this in — extend it with any new field.
+- **Tags are stored verbatim.** `tagSlug()` / `resolveTagFromSlug()` in `src/lib/utils.ts` are pure URL helpers: links are emitted normalized, and legacy raw-tag URLs (`/tags/SEO`, `/tags/Search%20Engine%20Optimization`) still resolve and canonicalize onto the normalized form. Never rewrite a stored tag to its slug form.
 - **Cover images are external URLs only.** There is deliberately no upload feature.
 
 ### 6.2 Site config (`content/site.config.json`) — validated by `siteConfigSchema`
 
-`title`, `description`, `baseUrl`, `author`, `defaultOgImage`, `social{twitter,github,linkedin}`, `theme{preset,accent,radius,headingFont}`.
+`title`, `description`, `baseUrl`, `author`, `authorBio`, `authorRole`, `defaultOgImage`, `social{twitter,github,linkedin}`, `theme{preset,accent,radius,headingFont}`.
 `SITE_URL` env seeds `baseUrl` only while it's still the localhost default; an explicit admin value always wins.
+`authorBio` / `authorRole` are optional additions used by `/about`, which is the entity home every post's `Person` reference resolves to. Older config files get schema defaults.
 
 ## 7. Environment variables
 
@@ -195,16 +227,22 @@ Never commit `.env*`. `.env.local` exists locally for serverless verification (f
 
 - **Read `README.md` and this file first**, then look at existing code before writing.
 - **Route all content I/O through `getAdapter()`.** Extend the `ContentAdapter` interface when new storage needs appear; implement it in *both* adapters.
-- **Keep the shared markdown pipeline in sync** — editor preview must equal the public render.
+- **Never let the two markdown renderers drift** — editor preview must equal the public render.
 - **Validate with zod** at the boundaries (frontmatter, site config, API bodies). The settings/posts API routes `safeParse` before saving.
 - **Use the live theme tokens** in components: `bg-paper`, `bg-surface`, `text-ink`, `text-ink-muted`, `border-line`, `bg-brand`, `text-on-brand`, `bg-brand-soft`, `text-brand-strong`. Prefer `brand/15`-style alpha modifiers over fixed scales.
+- **Route anything that needs post *bodies* through `src/lib/content/bodies.ts`** with an explicit cap. `listPosts()` returns frontmatter only, and the GitHub adapter already reads every post file to build it.
+- **Gate every machine-discovery surface on `isIndexable()`**, never a bare `published` check.
+- **Emit JSON-LD through `<JsonLd>` / `serializeJsonLd()`**, and make structured data mirror visible content (a `BreadcrumbList` needs a rendered breadcrumb).
+- **Link tags through `tagSlug()`** (`src/lib/utils.ts`) so URLs stay normalized while display text stays verbatim.
 - **When adding a new theme preset**: add it to `THEME_PRESETS` in `src/lib/theme.ts`, to the `z.enum()` in `src/lib/content/types.ts`, and add a corresponding render test in `route.appearance.test.ts`. Optionally add a related `AccentSwatch`.
 - **When adding a new accent swatch**: add it to the `ACCENT_SWATCHES` array in `src/lib/theme.ts`. The form renders them automatically.
+- **When adding a frontmatter field**: default it, omit it from `serializeFrontmatter` when empty, add it to `PostEditor`'s `BLANK_META`, and extend `src/lib/content/backward-compat.test.ts`.
+- **When adding a public route**: canonical via `withFeeds()`, OG/Twitter, a JSON-LD graph, and an entry in `sitemap.ts`.
 - **Guard no-op writes** (identical content ⇒ no commit) in any new write path.
-- **Drafts stay private**: check `meta.published` before any public exposure (page, RSS, sitemap, JSON-LD, llms.txt).
+- **Drafts stay private**: check `meta.published` before any public exposure (page, RSS, feeds, sitemap, JSON-LD, llms.txt, `/md/*`).
 - **Keep accessibility**: labeled form fields, accessible names, WCAG AA contrast, `prefers-reduced-motion` respect (existing `animate-*` utilities already gate on it).
-- **Colocate tests** next to the code, run `npm run typecheck && npm run lint && npm test` before finishing.
-- **Preserve the SEO/AEO surface** — new routes should still emit canonical URLs, metadata, and keep sitemap/robots/llms current.
+- **Colocate tests** next to the code, run `npm run typecheck && npm run lint && npm test && npm run build` before finishing.
+- **Preserve the SEO/AEO/GEO surface** — new routes should still emit canonical URLs, metadata, feed links, and keep sitemap/robots/llms current.
 
 ## 9. Conventions — DON'T
 
@@ -213,12 +251,16 @@ Never commit `.env*`. `.env.local` exists locally for serverless verification (f
 - ❌ **Don't branch on `DEPLOYMENT_MODE`** outside `getAdapter()`; features must work in both modes.
 - ❌ **Don't hardcode hex colors** in components/styles — use theme tokens. The static `brand-50…950` scale was removed; don't reintroduce it.
 - ❌ **Don't skip the no-op guard or make autosave commit on every keystroke** (it's debounced ~3 s by design).
-- ❌ **Don't serve unpublished posts** anywhere — not even via draft URLs.
+- ❌ **Don't serve unpublished posts** anywhere — not even via draft URLs, the markdown mirror, or the feeds.
+- ❌ **Don't advertise a `seo.noIndex` post** in the sitemap, RSS, JSON Feed, llms.txt or llms-full.txt. Use `isIndexable()`.
 - ❌ **Don't log or store plaintext passwords/tokens**, and don't leak stack traces from error/404 pages.
 - ❌ **Don't change the root-layout theme injection** to a client-only mechanism — it must be server-rendered to avoid flash of wrong theme and to keep SSG working.
 - ❌ **Don't use `next start`** for production (standalone output warns); use the standalone server or Docker.
 - ❌ **Don't bloat deps** — every package must be used (the project is strict about this).
 - ❌ **Don't overwrite the editor's single pipeline** — a second rendering path for the preview is a regression waiting to happen.
+- ❌ **Don't break existing content.** No frontmatter field without a default and an empty-omitting serializer; no URL change that stops resolving; no content-model change that rewrites a pre-existing post file.
+- ❌ **Don't collapse the two scorers into one number.** A high traditional SEO score does not imply a citable post.
+- ❌ **Don't use `next/image` for cover images.** Cover URLs are arbitrary external hosts and the optimizer would need the *server* to fetch them, which breaks on air-gapped or bandwidth-capped self-hosted deploys. A raw `<img>` with `fetchPriority="high"` plus an explicit `aspect-[16/9]` gets the LCP and CLS wins with no server-side dependency.
 
 ## 10. Testing
 

@@ -1,5 +1,7 @@
 import type { MetadataRoute } from "next";
 import { safeListPosts } from "@/lib/content";
+import { aboutUrl, blogUrl, homeUrl, tagsUrl, postUrl, tagUrl } from "@/lib/seo/jsonld";
+import { indexableTags, isIndexable } from "@/lib/seo/publish";
 import { getSiteConfig } from "@/lib/site-config";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
@@ -10,28 +12,47 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     safeListPosts(),
     getSiteConfig(),
   ]);
-  const baseUrl = config.baseUrl.replace(/\/+$/, "");
-  const published = posts.filter((p) => p.published);
+  // `isIndexable` (not just `published`): a post marked seo.noIndex must not be
+  // advertised for indexing here, or the opt-out is meaningless.
+  const indexable = posts.filter(isIndexable);
+  const newest = indexable
+    .map((p) => p.updated || p.date)
+    .sort()
+    .pop();
 
   const urls: MetadataRoute.Sitemap = [
-    { url: baseUrl, changeFrequency: "daily", priority: 1 },
-    { url: `${baseUrl}/tags`, changeFrequency: "weekly", priority: 0.5 },
+    {
+      url: homeUrl(config),
+      lastModified: newest,
+      changeFrequency: "daily",
+      priority: 1,
+    },
+    { url: blogUrl(config), changeFrequency: "daily", priority: 0.9 },
+    { url: tagsUrl(config), changeFrequency: "weekly", priority: 0.5 },
+    { url: aboutUrl(config), changeFrequency: "monthly", priority: 0.4 },
   ];
 
-  for (const post of published) {
-    urls.push({
-      url: `${baseUrl}/blog/${post.slug}`,
+  for (const post of indexable) {
+    const entry: MetadataRoute.Sitemap[number] = {
+      url: postUrl(config, post.slug),
       lastModified: post.updated || post.date,
       changeFrequency: "monthly",
       priority: 0.8,
-    });
+    };
+    // Image entries help image-bearing results. Next's typed sitemap route
+    // accepts plain URLs only (no caption/title fields).
+    const image = post.coverImage || config.defaultOgImage;
+    if (image) entry.images = [image];
+    urls.push(entry);
   }
 
-  const tagSet = new Set<string>();
-  for (const post of published) post.tags.forEach((t) => tagSet.add(t));
-  for (const tag of tagSet) {
+  // Only tags that clear the minimum-post bar get a URL. A tag whose posts are
+  // all drafts is noindex; a tag with a single post is a near-duplicate of that
+  // post. Both stay reachable via the tag links on every post.
+  for (const tag of indexableTags(indexable)) {
     urls.push({
-      url: `${baseUrl}/tags/${tag}`,
+      url: tagUrl(config, tag),
+      lastModified: newest,
       changeFrequency: "weekly",
       priority: 0.6,
     });

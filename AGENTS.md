@@ -71,17 +71,19 @@ Default section order:
 - **No deployment-mode branching** outside `src/lib/content/index.ts` (`getAdapter`). Features must work identically in `self-hosted` and `serverless` modes.
 - **All content I/O goes through `getAdapter()`** — never read/write content files or the GitHub API directly elsewhere.
 - **Every save is a commit; no-op saves never create commits** (both adapters guard this — preserve it).
-- **Drafts are private** — unpublished posts must 404 on every public route (pages, RSS, sitemap, llms.txt, JSON-LD).
+- **Drafts are private** — unpublished posts must 404 on every public route (pages, RSS, feeds, sitemap, llms.txt, `/md/*`, JSON-LD).
+- **`seo.noIndex` is honored everywhere** — an opted-out post must not be advertised in the sitemap, RSS, the JSON feed or llms.txt. Route that through `isIndexable()` in `src/lib/seo/publish.ts`.
+- **Backward compatibility is a product requirement.** Ansora runs live blogs; their markdown files and URLs are in git and cannot be migrated. Content-model changes must be additive + defaulted + omitted when empty; URL changes must keep old URLs resolving. See `src/lib/content/AGENTS.md` and `src/lib/content/backward-compat.test.ts`.
 - **No plaintext secrets** — only the bcrypt `ADMIN_PASSWORD_HASH`; never log credentials or tokens.
 - **Components use theme tokens, not hex colors.** Palette hex lives only in `src/lib/theme.ts` and the `globals.css` fallbacks.
-- **SEO/AEO surface is non-negotiable** — canonical URLs, metadata, JSON-LD, RSS/sitemap/robots/llms.txt stay correct.
-- **Security baseline (audited 2026-08):** slugs are validated by `isSafeSlug()` inside both content adapters before touching any path; every mutating admin API route runs `isCrossOrigin()`; site-wide security headers live only in `next.config.ts`; JSON-LD embeds through `serializeJsonLd()`. Do not bypass any of these.
+- **SEO/AEO surface is non-negotiable** — canonical URLs, metadata, JSON-LD entity graph, RSS/JSON Feed/sitemap/robots/llms.txt/llms-full.txt, markdown content negotiation stay correct.
+- **Security baseline (audited 2026-08):** slugs are validated by `isSafeSlug()` inside both content adapters before touching any path; every mutating admin API route runs `isCrossOrigin()`; site-wide security headers live only in `next.config.ts`; JSON-LD embeds through `serializeJsonLd()`/`components/JsonLd.tsx`. Do not bypass any of these.
 - **Deep reference:** `foundation.md` is the canonical codebase knowledge doc — read it before major work.
 
 ## Child DOX Index
 | Path | Scope | Contract |
 |---|---|---|
-| `content/AGENTS.md` | posts + site.config.json (the actual content) | content model, frontmatter, drafts |
+| `content/AGENTS.md` | posts + site.config.json (the actual content) | content model, frontmatter, drafts, noIndex |
 | `scripts/AGENTS.md` | hash-password, github-repo, verify-serverless | CLI helpers + harness |
 | `src/AGENTS.md` | the Next.js app source | app-wide rules + routes/components/lib index |
 

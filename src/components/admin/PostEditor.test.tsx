@@ -2,6 +2,7 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { DEFAULT_SITE_CONFIG } from "@/lib/content/types";
 import { PostEditor } from "./PostEditor";
 
 vi.mock("next/navigation", () => ({
@@ -34,7 +35,7 @@ class NoopImage {
 }
 
 function renderEditor() {
-  const utils = render(<PostEditor post={null} />);
+  const utils = render(<PostEditor post={null} config={DEFAULT_SITE_CONFIG} />);
   const textarea = screen.getByLabelText("Post content (Markdown)") as HTMLTextAreaElement;
   return {
     textarea,
