@@ -14,6 +14,10 @@ interface IndexItem {
 
 interface SearchIndex {
   items: IndexItem[];
+  /** Posts published in total, which may exceed `items.length`. */
+  total: number;
+  /** True when the index is capped and older posts are not searchable. */
+  truncated: boolean;
 }
 
 const STOP = new Set([
@@ -43,7 +47,7 @@ function tokenize(text: string): string[] {
  */
 export function SearchBox() {
   const [query, setQuery] = useState("");
-  const [index, setIndex] = useState<IndexItem[] | null>(null);
+  const [index, setIndex] = useState<SearchIndex | null>(null);
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -55,10 +59,12 @@ export function SearchBox() {
     void fetch("/search-index.json")
       .then((r) => r.json() as Promise<SearchIndex>)
       .then((data) => {
-        if (!cancelled) setIndex(data.items ?? []);
+        if (!cancelled) {
+          setIndex({ items: data.items ?? [], total: data.total ?? 0, truncated: !!data.truncated });
+        }
       })
       .catch(() => {
-        if (!cancelled) setIndex([]);
+        if (!cancelled) setIndex({ items: [], total: 0, truncated: false });
       });
     return () => {
       cancelled = true;
@@ -91,7 +97,7 @@ export function SearchBox() {
   const results = useMemo(() => {
     const terms = tokenize(query);
     if (!index || terms.length === 0) return [];
-    return index
+    return index.items
       .map((item) => {
         const title = tokenize(item.title);
         const tags = item.tags.flatMap((t) => tokenize(t));
@@ -139,11 +145,19 @@ export function SearchBox() {
 
       {showResults && (
         <div className="absolute right-0 top-full z-50 mt-2 w-[min(22rem,calc(100vw-3rem))] overflow-hidden rounded-2xl border border-line bg-surface shadow-lg">
+          {results.length > 0 && index?.truncated && (
+            <p className="border-b border-line bg-surface-soft/60 px-4 py-1.5 text-[11px] text-ink-muted">
+              Searching the {index.items.length} most recent of {index.total}{" "}
+              posts.
+            </p>
+          )}
           {results.length === 0 ? (
             <p className="px-4 py-4 text-sm text-ink-muted">
               {index === null
                 ? "Loading the index..."
-                : `Nothing matches "${query.trim()}".`}
+                : index.truncated
+                  ? `Nothing matches "${query.trim()}" in the ${index.items.length} most recent posts.`
+                  : `Nothing matches "${query.trim()}".`}
             </p>
           ) : (
             <ul className="max-h-80 overflow-y-auto">

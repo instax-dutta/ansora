@@ -36,7 +36,8 @@ export async function GET() {
   });
 
   const sections = published.map((post) => {
-    const body = bodies.get(post.slug) ?? post.answer.trim();
+    const body = bodies.get(post.slug);
+    const hasBody = Boolean(body) || Boolean(post.answer.trim());
     const meta: string[] = [`URL: ${postUrl(config, post.slug)}`];
     if (post.date) meta.push(`Published: ${post.date.slice(0, 10)}`);
     if (post.updated && post.updated !== post.date) {
@@ -66,6 +67,11 @@ export async function GET() {
       "> " + post.excerpt,
       "",
       meta.join(" | "),
+      // Per-post honesty: a reader that skipped the header still learns this
+      // section is not the whole article.
+      ...(hasBody
+        ? []
+        : [`> Note: excerpt only. Read the full post at ${postUrl(config, post.slug)}`]),
       "",
       "---",
       "",
@@ -75,12 +81,37 @@ export async function GET() {
     ].join("\n");
   });
 
+  const fullBodies = [...bodies.keys()].length;
+  const summaryOnly = published.length - fullBodies;
+  const total = published.length;
+
+  // This file exists to be *trusted* by a machine reader, so it must never
+  // imply it is more complete than it is. On a large blog the body budget
+  // means older posts are listed as frontmatter + excerpt rather than full
+  // text; saying "N posts" without qualification would be a false statement in
+  // the one document whose entire value is being accurate about what it
+  // contains.
+  const header: string[] = [];
+  if (summaryOnly === 0) {
+    header.push(
+      `> ${total} published post${total === 1 ? "" : "s"}, all with full text. Index: ${baseUrl}/llms.txt`
+    );
+  } else {
+    header.push(
+      `> ${total} published post${total === 1 ? "" : "s"}, newest first. ` +
+        `${fullBodies} include${fullBodies === 1 ? "s" : ""} full text; the other ` +
+        `${summaryOnly} ${summaryOnly === 1 ? "is" : "are"} listed with frontmatter and an ` +
+        `excerpt only. This file is capped to stay fast, so for the complete archive ` +
+        `read the individual posts, which are never truncated. Index: ${baseUrl}/llms.txt`
+    );
+  }
+
   const text = [
     `# ${config.title} - full text`,
     "",
     `> ${config.description}`,
     "",
-    `> ${published.length} published post${published.length === 1 ? "" : "s"}. Index: ${baseUrl}/llms.txt`,
+    ...header,
     "",
     "## Pages",
     "",

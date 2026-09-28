@@ -12,6 +12,18 @@ import {
 import { indexableTags, isIndexable } from "@/lib/seo/publish";
 import { getSiteConfig } from "@/lib/site-config";
 
+/**
+ * ISR, not a build-time bake.
+ *
+ * Left static, this route is frozen at build time and served from the CDN
+ * forever after. A build that runs without working content credentials — a
+ * transient GitHub outage, a missing env var on a fork — would bake a valid but
+ * empty sitemap that never corrects itself. That failure is silent: the file
+ * still parses, it just stops advertising anything. Re-validating on the same
+ * 300s cadence as the public pages means a bad build heals on its own.
+ */
+export const revalidate = 300;
+
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // Degrade to a minimal sitemap if the content adapter is unreachable
   // (e.g. a serverless build without GITHUB_REPO/GITHUB_TOKEN) — never fail
@@ -55,10 +67,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     urls.push(entry);
   }
 
-  // Only tags that clear the minimum-post bar get a URL. A tag whose posts are
-  // all drafts is noindex; a tag with a single post is a near-duplicate of that
-  // post. Both stay reachable via the tag links on every post.
-  for (const tag of indexableTags(indexable)) {
+  // Only tags that clear the minimum-post bar get a URL. `indexableTags()`
+  // filters by indexability itself, so drafts and noIndex posts can never
+  // contribute a tag here.
+  for (const tag of indexableTags(posts)) {
     urls.push({
       url: tagUrl(config, tag),
       lastModified: newest,

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getAdapter } from "@/lib/content";
 import { monthsSince } from "@/lib/markdown/overlap";
+import { buildIndexabilityReport } from "@/lib/seo/indexability";
 import { getSiteConfig } from "@/lib/site-config";
 import { formatDate } from "@/lib/utils";
 
@@ -33,6 +34,7 @@ export default async function AdminDashboardPage() {
     .slice(0, 5);
 
   const untagged = published.filter((p) => p.tags.length === 0).length;
+  const report = buildIndexabilityReport(posts);
 
   const stats = [
     { label: "Total posts", value: posts.length },
@@ -130,6 +132,71 @@ export default async function AdminDashboardPage() {
 
         {/* Side column */}
         <div className="space-y-6">
+          <section
+            aria-label="Search indexability"
+            className="rounded-2xl border border-line bg-surface p-5"
+          >
+            <h2 className="font-serif text-lg font-semibold text-ink">
+              Search visibility
+            </h2>
+            {report.coverage === null ? (
+              <p className="mt-2 text-sm text-ink-muted">
+                Nothing published yet.
+              </p>
+            ) : (
+              <>
+                <p className="mt-2 text-sm text-ink-muted">
+                  <span className="font-semibold text-ink">
+                    {report.indexable} of {report.published}
+                  </span>{" "}
+                  published {report.published === 1 ? "post is" : "posts are"}{" "}
+                  advertised to search engines and included in every feed.
+                </p>
+
+                {report.coverage < 100 && (
+                  <ul className="mt-3 space-y-1.5 text-xs text-ink-muted">
+                    {report.optedOut > 0 && (
+                      <li>
+                        {report.optedOut} hidden by the no-index setting, so
+                        they stay on the site but out of search results and
+                        feeds.
+                      </li>
+                    )}
+                    {report.untagged > 0 && (
+                      <li>
+                        {report.untagged} with no tags, so never appear in a
+                        reader&apos;s related-post list.
+                      </li>
+                    )}
+                    {report.thinTags > 0 && (
+                      <li>
+                        {report.thinTags} of {report.tags} tag pages have fewer
+                        than two posts, so they are marked no-index to keep thin
+                        pages out of the index. They still work for visitors.
+                      </li>
+                    )}
+                  </ul>
+                )}
+
+                {report.thinTagNames.length > 0 && (
+                  <details className="mt-3">
+                    <summary className="cursor-pointer text-xs font-medium text-ink-muted hover:text-ink">
+                      Show the {report.thinTagNames.length} thin tags
+                    </summary>
+                    <p className="mt-2 text-xs leading-relaxed text-ink-muted">
+                      {report.thinTagNames.join(", ")}
+                    </p>
+                  </details>
+                )}
+
+                <p className="mt-3 border-t border-line pt-3 text-xs text-ink-muted">
+                  Grouping a second post under an existing tag is usually the
+                  fastest way to make that page indexable.
+                </p>
+              </>
+            )}
+          </section>
+
           {(stale.length > 0 || untagged > 0) && (
             <section
               aria-label="Content health"

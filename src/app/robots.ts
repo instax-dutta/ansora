@@ -20,6 +20,13 @@ import { getSiteConfig } from "@/lib/site-config";
  * `isIndexable()` set as the sitemap, so it contains nothing that is not
  * already public, and it is how a crawler can enumerate every post title.
  */
+/**
+ * ISR, not a build-time bake. Same reasoning as `sitemap.ts`: a build without
+ * the content credentials would otherwise freeze a stale `Host:` and
+ * `Sitemap:` line — pointing at localhost — for the life of the deployment.
+ */
+export const revalidate = 300;
+
 export default async function robots(): Promise<MetadataRoute.Robots> {
   const config = await getSiteConfig();
   const baseUrl = config.baseUrl.replace(/\/+$/, "");

@@ -5,7 +5,8 @@ Everything that decides how the site reads to a machine: the entity graph, the i
 
 ## Ownership
 - `jsonld.ts` — entity ids (`#website`, `#organization`, `#author`, `#blog`) + `siteEntityNodes()` + `buildPostGraph` / `buildListingGraph` / `buildTagGraph` / `buildTagsIndexGraph` / `buildAboutGraph` + `serializeJsonLd()`
-- `publish.ts` — `isIndexable()` / `indexableSorted()` / `collectTags()`: the shared indexability policy
+- `publish.ts` — `isIndexable()` / `indexableSorted()` / `collectTags()` / `indexableTags()`: the shared indexability policy
+- `indexability.ts` — `buildIndexabilityReport()`: what the platform decided about a site's indexability, for the admin dashboard. Computed from the same policy functions the routes use, so the dashboard can never disagree with what a crawler sees.
 - `markdown-doc.ts` — markdown documents served by `/md/*` (pure, testable)
 - `metadata.ts` — `withFeeds()` / `feedAlternateTypes()`: canonical + feed autodiscovery
 - `preview.ts` — `truncate`, `resolveSerp`, `resolveSocial` for the editor previews
@@ -24,6 +25,9 @@ Everything that decides how the site reads to a machine: the entity graph, the i
 ## Work Guidance
 - Prefer a pure, exported function over inline JSX for anything a route or the editor computes, so it can be unit tested without rendering.
 - Feed/sitemap output must stay correct on degraded input: escape XML, escape CDATA terminators, and never throw when the content adapter is unreachable.
+- **A machine-facing file must never overstate its own completeness.** `/llms-full.txt` is a truncated-by-design document; its header must say how many posts carry full text versus excerpt only, and each truncated section must say so individually. A bare "N posts" claim on a capped file is a false statement in the one document whose entire value is being accurate about what it contains. `/search-index.json` follows the same rule with `total` + `truncated`.
+- **`indexableTags()` filters by indexability itself.** Do not rely on the caller pre-filtering; the name promises it, and a caller passing a raw post list would otherwise advertise tag pages whose only posts are drafts or opted out.
+- **Every bounded surface reports its bound.** RSS, JSON Feed, llms-full.txt and the search index all cap work per request. A cap that is invisible to the consumer is indistinguishable from a bug.
 - Tag URLs are normalized on output only. Store tags verbatim (`tagSlug` lives in `utils.ts`).
 
 ## Verification

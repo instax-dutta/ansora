@@ -49,10 +49,19 @@ export function collectTags(posts: PostMeta[]): string[] {
  */
 export const MIN_POSTS_FOR_TAG_INDEX = 2;
 
-/** Tags with enough published posts to earn an indexable archive page. */
+/**
+ * Tags with enough *indexable* published posts to earn an archive page.
+ *
+ * Filters internally by design. The name promises indexability, so a caller
+ * that passes the raw post list gets the right answer rather than having to
+ * remember to pre-filter — passing an unfiltered list here would advertise tag
+ * pages whose only posts are drafts or opted out, which is exactly the bug
+ * class this module exists to prevent.
+ */
 export function indexableTags(posts: PostMeta[]): string[] {
   const counts = new Map<string, number>();
   for (const post of posts) {
+    if (!isIndexable(post)) continue;
     for (const tag of post.tags) {
       if (tag.trim()) counts.set(tag, (counts.get(tag) ?? 0) + 1);
     }

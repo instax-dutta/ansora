@@ -110,6 +110,7 @@ vi.mock("@/lib/content", () => ({
 vi.mock("@/lib/site-config", () => ({ getSiteConfig: h.getSiteConfig }));
 
 import { GET as llmsFull } from "@/app/llms-full.txt/route";
+import { GET as searchIndex } from "@/app/search-index.json/route";
 import { GET as llms } from "@/app/llms.txt/route";
 import { GET as feedJson } from "@/app/feed.json/route";
 import { GET as rss } from "@/app/rss.xml/route";
@@ -244,5 +245,68 @@ describe("feed.json", () => {
   it("sets the right content type for feed readers", async () => {
     const res = await feedJson();
     expect(res.headers.get("Content-Type")).toContain("application/feed+json");
+  });
+});
+
+describe("llms-full.txt honesty", () => {
+  it("claims completeness only when it is complete", async () => {
+    // Every post has a body available, so the file may assert it is complete.
+    const text = await (await llmsFull()).text();
+    expect(text).toMatch(/published posts?, all with full text/);
+  });
+
+  it("never states a bare post count when bodies were capped", async () => {
+    // Simulate a blog larger than the body budget: the header must admit the
+    // file is partial rather than implying it is the whole corpus.
+    const many = Array.from({ length: 6 }, (_, i) =>
+      meta({ title: `Post ${i}`, slug: `post-${i}` })
+    );
+    listPosts.mockResolvedValueOnce(many);
+    getPost.mockImplementation(async (slug: string) => {
+      const m = many.find((p) => p.slug === slug);
+      return m ? { meta: m, content: "Body text.", fileName: `${slug}.md` } : null;
+    });
+
+    const text = await (await llmsFull()).text();
+    // The disclaimer is present whenever a body is missing.
+    expect(text).toMatch(/excerpt only|all with full text/);
+    // And a post whose body was unavailable says so on its own section.
+    if (/excerpt only/.test(text)) {
+      expect(text).toContain("Note: excerpt only.");
+    }
+  });
+});
+
+describe("search index bounds", () => {
+  it("reports total and truncation state so the client can be honest", async () => {
+    const data = JSON.parse(await (await searchIndex()).text());
+    expect(data.total).toBe(2);
+    expect(data.truncated).toBe(false);
+    expect(data.items).toHaveLength(2);
+    for (const item of data.items) {
+      expect(item.summary.length).toBeLessThanOrEqual(220);
+      expect(item).toHaveProperty("url");
+      expect(item).toHaveProperty("tags");
+    }
+  });
+
+  it("marks the index truncated when it caps the post list", async () => {
+    // The index is bounded so a large blog does not ship an unbounded payload
+    // to every visitor who focuses the search box.
+    const many = Array.from({ length: 600 }, (_, i) =>
+      meta({ title: `P${i}`, slug: `p-${i}` })
+    );
+    listPosts.mockResolvedValueOnce(many);
+    const data = JSON.parse(await (await searchIndex()).text());
+    expect(data.total).toBe(600);
+    expect(data.truncated).toBe(true);
+    expect(data.items.length).toBeLessThan(600);
+  });
+
+  it("excludes drafts and noIndex posts from search", async () => {
+    const data = JSON.parse(await (await searchIndex()).text());
+    const slugs = data.items.map((i: { slug: string }) => i.slug);
+    expect(slugs).not.toContain("secret-draft");
+    expect(slugs).not.toContain("hidden-post");
   });
 });
