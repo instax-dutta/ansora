@@ -96,18 +96,97 @@ function cleanUndefined(value: unknown): unknown {
   return value;
 }
 
-/** Normalize raw YAML frontmatter (gray-matter may hand us Dates) and validate. */
+/**
+ * Normalize raw YAML frontmatter (gray-matter may hand us Dates) and validate.
+ *
+ * Strict: throws on the first invalid field. Correct for the write path, where
+ * rejecting bad input is the entire point. Read paths use
+ * `normalizeFrontmatterLoose` instead, because a single mistyped field in a
+ * single file must not be able to take down the whole site.
+ */
 export function normalizeFrontmatter(raw: Record<string, unknown>): PostMeta {
   const data: Record<string, unknown> = { ...raw };
   for (const key of ["date", "updated"] as const) {
     const value = data[key];
     if (value instanceof Date) data[key] = value.toISOString();
-    else if (typeof value === "number" || typeof value === "string") {
-      // Keep strings/numbers as-is; zod will coerce where sensible.
-      data[key] = value;
-    }
   }
   return cleanUndefined(postMetaSchema.parse(data)) as PostMeta;
+}
+
+export interface FrontmatterProblem {
+  field: string;
+  /** What was wrong, in one short line. Never includes the value verbatim. */
+  issue: string;
+}
+
+export interface LooseParseResult {
+  meta: PostMeta;
+  problems: FrontmatterProblem[];
+}
+
+/**
+ * Resilient frontmatter parse for **reads**. Never throws.
+ *
+ * Why this exists, and why it matters more than it looks: `listPosts()`
+ * validates every post in the repository. With strict parsing, a single
+ * mistyped field in a single file throws out of the loop and `safeListPosts()`
+ * degrades the whole site to an empty listing. A blog does not stop working
+ * because one post has `answer: 2026` in it, where YAML happily typed that as
+ * a number and zod demanded a string. The failure mode is catastrophic and
+ * wildly disproportionate to the cause.
+ *
+ * So reads validate field-by-field and fall back to that field's default,
+ * reporting what was wrong. Strict validation is still the right behaviour on
+ * the *write* path, where rejecting bad input is the point — see
+ * `normalizeFrontmatter`, which still throws.
+ */
+export function normalizeFrontmatterLoose(
+  raw: Record<string, unknown>,
+  label?: string
+): LooseParseResult {
+  // gray-matter hands back real Date objects for unquoted YAML dates.
+  const data: Record<string, unknown> = { ...raw };
+  for (const key of ["date", "updated"] as const) {
+    const value = data[key];
+    if (value instanceof Date) data[key] = value.toISOString();
+  }
+  const problems: FrontmatterProblem[] = [];
+  const shape = postMetaSchema.shape as Record<
+    string,
+    { safeParse?: (v: unknown) => { success: boolean; error?: { issues?: { message?: string }[] } } }
+  >;
+
+  for (const [key, value] of Object.entries(data)) {
+    const field = shape[key];
+    if (!field?.safeParse) continue; // unknown key: not our problem
+    const result = field.safeParse(value);
+    if (result.success) continue;
+
+    // Fall back to this field's default, so one bad value cannot fail the post
+    // and cannot fail the site.
+    const fallback = postMetaSchema.parse({});
+    (data as Record<string, unknown>)[key] = (fallback as unknown as Record<string, unknown>)[key];
+    problems.push({
+      field: key,
+      issue: result.error?.issues?.[0]?.message ?? "invalid value",
+    });
+  }
+
+  if (problems.length > 0 && label) {
+    console.warn(
+      `[content] frontmatter in "${label}" had ${problems.length} invalid field(s), ` +
+        `defaulted: ${problems.map((p) => p.field).join(", ")}. The post is still published; ` +
+        `fix the field to restore it.`
+    );
+  }
+
+  try {
+    return { meta: cleanUndefined(postMetaSchema.parse(data)) as PostMeta, problems };
+  } catch {
+    // Unreachable in practice: every field is now individually valid. Belt and
+    // braces — a read must still not take the site down.
+    return { meta: postMetaSchema.parse({}) as PostMeta, problems };
+  }
 }
 
 /** Canonical order + shape used when serializing frontmatter back to YAML. */

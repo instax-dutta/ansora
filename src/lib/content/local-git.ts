@@ -20,6 +20,7 @@ import type { Post, PostMeta, SiteConfig } from "./types";
 import {
   DEFAULT_SITE_CONFIG,
   normalizeFrontmatter,
+  normalizeFrontmatterLoose,
   siteConfigSchema,
 } from "./types";
 
@@ -95,7 +96,7 @@ export class LocalGitAdapter implements ContentAdapter {
       try {
         const raw = await fs.readFile(path.join(this.postsDir, entry), "utf8");
         const { data } = matter(raw);
-        posts.push(normalizeFrontmatter(data as Record<string, unknown>));
+        posts.push(normalizeFrontmatterLoose(data as Record<string, unknown>, entry).meta);
       } catch {
         // Skip unreadable/corrupt files rather than breaking the whole blog.
         continue;
@@ -116,7 +117,9 @@ export class LocalGitAdapter implements ContentAdapter {
     if (raw === null) return null;
 
     const { data, content } = matter(raw);
-    const meta = normalizeFrontmatter(data as Record<string, unknown>);
+    // Read path: tolerant parsing, same as listPosts. A bad field degrades this
+    // post's frontmatter instead of making the post unreadable.
+    const meta = normalizeFrontmatterLoose(data as Record<string, unknown>, slug).meta;
     // The file name is the source of truth for the URL slug.
     return { meta: { ...meta, slug }, content, fileName };
   }

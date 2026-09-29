@@ -19,6 +19,7 @@ import type { Post, PostMeta, SiteConfig } from "./types";
 import {
   DEFAULT_SITE_CONFIG,
   normalizeFrontmatter,
+  normalizeFrontmatterLoose,
   siteConfigSchema,
 } from "./types";
 
@@ -210,11 +211,21 @@ export class GitHubApiAdapter implements ContentAdapter {
       file.path ? this.getFileRaw(file.path) : Promise.resolve(null)
     );
 
+    // Read path: tolerant parsing. One malformed field in one post used to
+    // throw out of this loop and blank the entire site, because
+    // `safeListPosts()` degrades a throw to an empty listing. The post is kept,
+    // the bad field falls back to its default, and the offender is named.
     const posts: PostMeta[] = [];
-    for (const raw of rawPosts) {
+    for (let i = 0; i < rawPosts.length; i++) {
+      const raw = rawPosts[i];
       if (!raw) continue;
       const { data } = matter(raw.content);
-      posts.push(normalizeFrontmatter(data as Record<string, unknown>));
+      const slugHint = files[i]?.path?.split("/").pop()?.replace(/\.md$/, "");
+      const { meta } = normalizeFrontmatterLoose(
+        data as Record<string, unknown>,
+        slugHint
+      );
+      posts.push(meta);
     }
 
     posts.sort((a, b) => b.date.localeCompare(a.date));
@@ -237,7 +248,12 @@ export class GitHubApiAdapter implements ContentAdapter {
     }
 
     const { data, content } = matter(raw.content);
-    const meta = { ...normalizeFrontmatter(data as Record<string, unknown>), slug };
+    // Read path: same tolerant parsing as listPosts, so a bad field degrades
+    // this one post rather than 404ing it.
+    const meta = {
+      ...normalizeFrontmatterLoose(data as Record<string, unknown>, slug).meta,
+      slug,
+    };
     const post: Post = { meta, content, fileName: `${slug}.md` };
     this.postCache.set(slug, post);
     return post;
