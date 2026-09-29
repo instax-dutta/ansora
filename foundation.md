@@ -34,7 +34,8 @@ credentials come from environment variables.
 6. **No plaintext passwords ever** — only `ADMIN_PASSWORD_HASH` (bcrypt) in env vars; never log credentials.
 7. **No broken SEO/AEO/GEO defaults.** Metadata, the JSON-LD entity graph, canonical URLs, RSS, JSON Feed, sitemap, robots.txt, `llms.txt`, `llms-full.txt` and markdown content negotiation are non-negotiable output. `seo.noIndex` must be honored on every machine-discovery surface.
 8. **Components use the theme tokens** (`bg-paper`, `text-ink`, `bg-brand`, …). All palette hex values live in exactly two places: the presets in `src/lib/theme.ts` and the warm fallback defaults in `globals.css` — don't add hex anywhere else (see §6.4).
-9. **Backward compatibility is a product requirement.** Ansora runs live blogs whose markdown files and URLs cannot be migrated. Content-model changes must be additive, defaulted, and omitted when empty; URL changes must keep old URLs resolving. See `src/lib/content/backward-compat.test.ts`.
+9. **A read must never be taken down by bad data in one post, and a failure must never look like an empty blog.** Strict frontmatter validation belongs on writes; reads parse tolerantly field by field and report the offender. `listStatus()` + `ContentUnavailable` exist so a degraded listing says so. Both rules were added after a live deployment went fully offline because one post had a mistyped field, and the failure presented as "the blog is empty".
+10. **Backward compatibility is a product requirement.** Ansora runs live blogs whose markdown files and URLs cannot be migrated. Content-model changes must be additive, defaulted, and omitted when empty; URL changes must keep old URLs resolving. See `src/lib/content/backward-compat.test.ts`.
 
 ## 3. Tech stack
 
@@ -268,6 +269,9 @@ Never commit `.env*`. `.env.local` exists locally for serverless verification (f
 - ❌ **Don't break existing content.** No frontmatter field without a default and an empty-omitting serializer; no URL change that stops resolving; no content-model change that rewrites a pre-existing post file.
 - ❌ **Don't collapse the two scorers into one number.** A high traditional SEO score does not imply a citable post.
 - ❌ **Don't add a persistent cache in front of `listPosts()`.** The tree-SHA cache exists so a content commit appears on the homepage immediately (`3fab213`). Fix latency with concurrency, not staleness.
+- ❌ **Don't let a read throw.** `listPosts`/`getPost` must use `normalizeFrontmatterLoose`, never the strict parser. One bad file in a loop over every post is a total outage.
+- ❌ **Don't render a degraded listing as "Nothing published yet".** It reads to an author as data loss and to a crawler as an empty site.
+- ❌ **Don't interpolate a raw error into a page.** Use `describeAdapterError()`; Octokit errors can carry auth headers.
 - ❌ **Don't block a save on advisory advice.** Cannibalization and orphan warnings are judgement calls; only genuinely broken input (a malformed `seo.canonicalUrl`, which can deindex a post) should throw.
 - ❌ **Don't let a machine-facing file overstate its completeness.** `llms-full.txt` is truncated by design; say so in the header and per section. A bare "N posts" on a capped file is a false statement in the document whose only value is being trustworthy to a reader.
 - ❌ **Don't drop `export const revalidate = 300` from `sitemap.ts` or `robots.ts`.** They become build-time bakes, and a build without content credentials then freezes an empty sitemap (or a localhost `Host:`) permanently. Verify with `npm run build` — both should show `5m`.

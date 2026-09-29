@@ -15,6 +15,7 @@ App Router routes: the public site, the admin panel, the admin API, and the mach
 - `not-found.tsx`, `error.tsx`, `global-error.tsx`
 
 ## Local Contracts
+- **A failed listing must render as a failure, never as an empty blog.** Any page that renders a post list has to branch on `listStatus()` via `<ContentUnavailable />`. `safeListPosts()` returning `[]` is a degraded state, not an empty site, and conflating them is what took a production blog offline while looking like a successful empty response.
 - **Drafts 404 on every public surface** — check `post.meta.published` (pages, RSS, feeds, sitemap, llms.txt, llms-full.txt, `/md/*`, JSON-LD).
 - **`seo.noIndex` is enforced by `isIndexable()`** (`src/lib/seo/publish.ts`), not by a bare `published` check. Every route in `rss.xml`, `feed.json`, `llms.txt`, `llms-full.txt` and `sitemap.ts` must use it. A noIndex post that still appears in a feed is a bug, not a style choice.
 - Blog post pages: `revalidate = 300` (ISR); `generateStaticParams()` returns `[]` when `DEPLOYMENT_MODE=serverless`. `/blog`, `/about` and `/tags` are ISR at 300s. `/` is explicitly `force-dynamic` because it reads `searchParams` for pagination and therefore cannot also be an ISR route — that is deliberate, and changing it would mean `/page/2` paths and invalidating already-indexed `?page=N` URLs.

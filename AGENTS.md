@@ -71,6 +71,7 @@ Default section order:
 - **No deployment-mode branching** outside `src/lib/content/index.ts` (`getAdapter`). Features must work identically in `self-hosted` and `serverless` modes.
 - **All content I/O goes through `getAdapter()`** — never read/write content files or the GitHub API directly elsewhere.
 - **Every save is a commit; no-op saves never create commits** (both adapters guard this — preserve it).
+- **A read must never be taken down by bad data in one post.** Strict frontmatter validation on writes; tolerant field-by-field parsing on reads. A failure must render as a failure, never as an empty blog. See `src/lib/content/AGENTS.md`.
 - **Drafts are private** — unpublished posts must 404 on every public route (pages, RSS, feeds, sitemap, llms.txt, `/md/*`, JSON-LD).
 - **`seo.noIndex` is honored everywhere** — an opted-out post must not be advertised in the sitemap, RSS, the JSON feed or llms.txt. Route that through `isIndexable()` in `src/lib/seo/publish.ts`.
 - **Backward compatibility is a product requirement.** Ansora runs live blogs; their markdown files and URLs are in git and cannot be migrated. Content-model changes must be additive + defaulted + omitted when empty; URL changes must keep old URLs resolving. See `src/lib/content/AGENTS.md` and `src/lib/content/backward-compat.test.ts`.
