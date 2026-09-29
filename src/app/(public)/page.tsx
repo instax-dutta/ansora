@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { ContentUnavailable } from "@/components/ContentUnavailable";
 import { JsonLd } from "@/components/JsonLd";
 import { Pagination } from "@/components/Pagination";
 import { PostCard } from "@/components/PostCard";
@@ -81,13 +82,7 @@ export default async function HomePage({
       </section>
 
       {pagePosts.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-line-strong p-12 text-center">
-          <p className="font-serif text-xl text-ink">Nothing published yet.</p>
-          <p className="mt-2 text-sm text-ink-muted">
-            Head to the admin panel and write your first post &mdash; or just enjoy
-            the quiet.
-          </p>
-        </div>
+        <ContentUnavailable />
       ) : (
         <section
           aria-label="Posts"

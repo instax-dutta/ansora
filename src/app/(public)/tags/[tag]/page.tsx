@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { ContentUnavailable } from "@/components/ContentUnavailable";
 import { JsonLd } from "@/components/JsonLd";
 import { PostCard } from "@/components/PostCard";
 import { safeListPosts } from "@/lib/content";
@@ -115,9 +116,9 @@ export default async function TagPage({
           ))}
         </section>
       ) : (
-        <p className="mt-10 rounded-2xl border border-dashed border-line-strong p-8 text-center text-sm text-ink-muted">
-          Nothing published under this topic yet.
-        </p>
+        <div className="mt-10">
+          <ContentUnavailable />
+        </div>
       )}
     </div>
   );

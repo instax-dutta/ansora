@@ -37,8 +37,22 @@ function isNotFound(err: unknown): boolean {
   return (
     typeof err === "object" &&
     err !== null &&
-    (err as { status?: number }).status === 404
+    (err as { status?: unknown }).status === 404
   );
+}
+
+/** Rate limited, forbidden, or a server-side hiccup: worth one retry. */
+function isTransient(err: unknown): boolean {
+  if (typeof err !== "object" || err === null) return false;
+  const status = (err as { status?: unknown }).status;
+  if (typeof status !== "number") return false;
+  return status === 403 || status === 429 || status >= 500;
+}
+
+const RETRY_BACKOFF_MS = 250;
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
 export class GitHubApiAdapter implements ContentAdapter {
@@ -67,24 +81,48 @@ export class GitHubApiAdapter implements ContentAdapter {
     return `${this.options.postsPath}/${slug}.md`;
   }
 
+  /**
+   * Read a file, retrying once on a *transient* failure.
+   *
+   * 404 is not an error at all — it means the file is absent, which the
+   * original in-place `catch` translated to `null`. That translation must be
+   * preserved on both the first attempt and the retry, or a missing file throws
+   * and takes down a listing.
+   *
+   * 403/429/5xx *are* transient: one short-backoff retry usually clears a rate
+   * limit or a blip, and the caller never learns anything went wrong. One retry,
+   * not a loop — genuine quota exhaustion will still fail, and hammering a
+   * rate-limited API makes it worse.
+   */
   private async getFileRaw(filePath: string): Promise<{ content: string; sha: string } | null> {
     try {
-      const res = await this.octokit.rest.repos.getContent({
-        owner: this.owner,
-        repo: this.repo,
-        path: filePath,
-        ref: this.options.branch,
-      });
-      const data = res.data as { content?: string; sha?: string };
-      if (Array.isArray(res.data) || !data.content || !data.sha) return null;
-      return {
-        content: Buffer.from(data.content, "base64").toString("utf8"),
-        sha: data.sha,
-      };
+      return await this.fetchFileRaw(filePath);
     } catch (err) {
       if (isNotFound(err)) return null;
-      throw err;
+      if (!isTransient(err)) throw err;
+      await sleep(RETRY_BACKOFF_MS);
+      try {
+        return await this.fetchFileRaw(filePath);
+      } catch (retryErr) {
+        if (isNotFound(retryErr)) return null;
+        throw retryErr;
+      }
     }
+  }
+
+  private async fetchFileRaw(filePath: string): Promise<{ content: string; sha: string } | null> {
+    const res = await this.octokit.rest.repos.getContent({
+      owner: this.owner,
+      repo: this.repo,
+      path: filePath,
+      ref: this.options.branch,
+    });
+    const data = res.data as { content?: string; sha?: string };
+    if (Array.isArray(res.data) || !data.content || !data.sha) return null;
+    return {
+      content: Buffer.from(data.content, "base64").toString("utf8"),
+      sha: data.sha,
+    };
   }
 
   private async getFileSha(filePath: string): Promise<string | null> {
@@ -94,17 +132,35 @@ export class GitHubApiAdapter implements ContentAdapter {
 
   /* ------------------------------ Reads ---------------------------------- */
 
+  private async fetchTreeWithRetry() {
+    try {
+      return await this.fetchTree();
+    } catch (err) {
+      if (isNotFound(err) || !isTransient(err)) throw err;
+      await sleep(RETRY_BACKOFF_MS);
+      return this.fetchTree();
+    }
+  }
+  private fetchTree() {
+    return this.octokit.rest.git.getTree({
+      owner: this.owner,
+      repo: this.repo,
+      tree_sha: this.options.branch,
+      recursive: "true",
+    });
+  }
+
   async listPosts(): Promise<PostMeta[]> {
     // Always re-check the tree metadata so a new content commit is visible
     // immediately, even when the request lands on a warm serverless instance.
     // The tree SHA changes whenever a file in the repository tree changes, so
     // unchanged content still benefits from the short-lived parsed-list cache.
-    const tree = await this.octokit.rest.git.getTree({
-      owner: this.owner,
-      repo: this.repo,
-      tree_sha: this.options.branch,
-      recursive: "true",
-    }).catch((err: unknown) => {
+    // The tree call is the single point of failure for the whole site: if it
+    // throws, `safeListPosts()` degrades and every listing page renders as an
+    // empty blog. It therefore gets the same one-shot transient retry as the
+    // file reads — a rate limit here costs the entire site's content, not one
+    // post, so it is the last place to be casual about it.
+    const tree = await this.fetchTreeWithRetry().catch((err: unknown) => {
       // A fresh repo has no commits (and thus no branch tree) yet. Treat that
       // as empty rather than crashing the dashboard. A 404 can also mean the
       // configured branch doesn't exist — logged so it's diagnosable.
@@ -143,14 +199,14 @@ export class GitHubApiAdapter implements ContentAdapter {
     // of any uncached page, and it is why the home page was measurably slower
     // than every ISR route.
     //
-    // The width is a latency/limits trade-off, and the measurement drove it:
-    // 32 posts at width 8 is 1 tree call + 4 waves = 5 sequential steps
-    // (~104ms each on a real deployment, so ~520ms of app time). At 16 it is
-    // 3 steps. GitHub's documented ceiling is 100 concurrent requests per
-    // client, so 16 is a wide margin - but do not raise this casually, because
-    // tripping a *secondary* rate limit looks like random 403s and costs more
-    // than the latency it would save.
-    const rawPosts = await mapWithConcurrency(files, 16, (file) =>
+    // The width is a latency/limits trade-off and it is deliberately modest.
+    // Width 16 was measured as ~20% faster than 8, but concurrency does not
+    // change the *number* of calls, only how fast they arrive - and a burst is
+    // exactly what trips GitHub's secondary rate limit. Since a rate limit
+    // here does not degrade one post, it blanks the entire site, the slower
+    // option is clearly the right default. Raise this only with evidence, and
+    // never above a small fraction of GitHub's 100-concurrent ceiling.
+    const rawPosts = await mapWithConcurrency(files, 8, (file) =>
       file.path ? this.getFileRaw(file.path) : Promise.resolve(null)
     );
 

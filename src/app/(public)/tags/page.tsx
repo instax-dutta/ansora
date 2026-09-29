@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { ContentUnavailable } from "@/components/ContentUnavailable";
 import { JsonLd } from "@/components/JsonLd";
 import { safeListPosts } from "@/lib/content";
 import { buildTagsIndexGraph, tagsUrl } from "@/lib/seo/jsonld";
@@ -49,7 +50,9 @@ export default async function TagsIndexPage() {
       </p>
 
       {tags.length === 0 ? (
-        <p className="mt-10 text-sm text-ink-muted">No tags yet.</p>
+        <div className="mt-10">
+          <ContentUnavailable />
+        </div>
       ) : (
         <ul className="mt-10 flex flex-wrap gap-2.5">
           {tags.map(([tag, count]) => (

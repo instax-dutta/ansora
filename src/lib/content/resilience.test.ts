@@ -91,6 +91,46 @@ describe("safeListPosts", () => {
     await expect(content.safeListPosts()).resolves.toEqual([]);
     expect(console.warn).toHaveBeenCalled();
   });
+
+  /**
+   * The distinction that stops a rate limit from looking like a deleted blog.
+   *
+   * Degrading to `[]` is right for uptime. Rendering that `[]` as "Nothing
+   * published yet" was wrong: an author reads it as losing every post, and a
+   * crawler reads it as a site with no content, which is how a working blog
+   * gets dropped from an index.
+   */
+  it("reports a failed listing instead of disguising it as an empty blog", async () => {
+    vi.stubEnv("DEPLOYMENT_MODE", "serverless");
+    vi.stubEnv("GITHUB_REPO", "");
+    vi.stubEnv("GITHUB_TOKEN", "");
+    const { content } = await freshModules();
+    await content.safeListPosts();
+
+    expect(content.listStatus().ok).toBe(false);
+    expect(content.listStatus().reason).toBeTruthy();
+    expect(content.listStatus().at).toBeTypeOf("number");
+  });
+
+  it("reports ok for a healthy listing, so the error banner stays hidden", async () => {
+    const { content } = await freshModules();
+    await content.safeListPosts();
+    expect(content.listStatus().ok).toBe(true);
+    expect(content.listStatus().reason).toBeNull();
+  });
+
+  it("clears a recorded failure once the store recovers", async () => {
+    vi.stubEnv("DEPLOYMENT_MODE", "serverless");
+    vi.stubEnv("GITHUB_REPO", "");
+    vi.stubEnv("GITHUB_TOKEN", "");
+    const { content } = await freshModules();
+    await content.safeListPosts();
+    expect(content.listStatus().ok).toBe(false);
+
+    // A recovered store must not leave a permanent error banner behind.
+    content.resetListStatus();
+    expect(content.listStatus().ok).toBe(true);
+  });
 });
 
 describe("getSiteConfig", () => {

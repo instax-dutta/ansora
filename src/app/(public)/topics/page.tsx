@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { ContentUnavailable } from "@/components/ContentUnavailable";
 import { JsonLd } from "@/components/JsonLd";
 import { PostCard } from "@/components/PostCard";
 import { safeListPosts } from "@/lib/content";
@@ -66,6 +67,19 @@ export default async function TopicsPage() {
       </Link>
     </li>
   );
+
+  if (published.length === 0) {
+    return (
+      <div className="mx-auto w-full max-w-5xl px-4 py-10 sm:px-6 sm:py-14">
+        <h1 className="font-serif text-3xl font-semibold tracking-tight text-ink sm:text-4xl">
+          Topics
+        </h1>
+        <div className="mt-8">
+          <ContentUnavailable />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto w-full max-w-5xl px-4 py-10 sm:px-6 sm:py-14">
