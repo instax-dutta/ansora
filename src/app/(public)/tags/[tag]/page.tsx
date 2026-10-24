@@ -1,19 +1,36 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { cache } from "react";
 import { ContentUnavailable } from "@/components/ContentUnavailable";
 import { JsonLd } from "@/components/JsonLd";
 import { PostCard } from "@/components/PostCard";
-import { safeListPosts } from "@/lib/content";
+import { getAdapter, safeListPosts } from "@/lib/content";
 import type { PostMeta } from "@/lib/content/types";
 import { buildTagGraph, tagUrl } from "@/lib/seo/jsonld";
 import { withFeeds } from "@/lib/seo/metadata";
 import { MIN_POSTS_FOR_TAG_INDEX } from "@/lib/seo/publish";
 import { getSiteConfig } from "@/lib/site-config";
-import { resolveTagFromSlug } from "@/lib/utils";
+import { resolveTagFromSlug, tagSlug } from "@/lib/utils";
 
 export const revalidate = 300;
 export const dynamicParams = true;
+
+/** One list read per request, shared by generateMetadata and the page body. */
+const listPosts = cache(safeListPosts);
+
+export async function generateStaticParams() {
+  if (process.env.DEPLOYMENT_MODE === "serverless") return [];
+  const posts = await getAdapter().listPosts();
+  const slugs = new Set(
+    posts
+      .filter((p) => p.published)
+      .flatMap((p) => p.tags)
+      .filter((tag) => tag.trim())
+      .map((tag) => tagSlug(tag))
+  );
+  return [...slugs].map((tag) => ({ tag }));
+}
 
 /**
  * Resolve a `/tags/<slug>` param to the raw tag it refers to.
@@ -26,7 +43,7 @@ export const dynamicParams = true;
  * changes.
  */
 async function resolveTag(param: string): Promise<{ tag: string | null }> {
-  const posts = await safeListPosts();
+  const posts = await listPosts();
   const allTags = [...new Set(posts.flatMap((p) => p.tags))].filter((t) => t.trim());
   return { tag: resolveTagFromSlug(allTags, param) };
 }
@@ -43,7 +60,7 @@ export async function generateMetadata({
   ]);
   if (!tag) return { title: "Tag not found", robots: { index: false, follow: true } };
 
-  const posts = await safeListPosts();
+  const posts = await listPosts();
   const tagged = posts.filter((p) => p.published && p.tags.includes(tag));
 
   return {
@@ -73,7 +90,7 @@ export default async function TagPage({
 }) {
   const { tag: param } = await params;
   const [posts, config, { tag }] = await Promise.all([
-    safeListPosts(),
+    listPosts(),
     getSiteConfig(),
     resolveTag(param),
   ]);
