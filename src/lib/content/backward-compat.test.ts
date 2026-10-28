@@ -4,6 +4,7 @@ import {
   normalizeFrontmatter,
   postMetaSchema,
   serializeFrontmatter,
+  serializeSiteConfig,
   siteConfigSchema,
 } from "./types";
 
@@ -119,5 +120,88 @@ describe("site config backward compatibility", () => {
 
   it("keeps the exported default config valid against the schema", () => {
     expect(() => siteConfigSchema.parse(DEFAULT_SITE_CONFIG)).not.toThrow();
+  });
+});
+
+/**
+ * Analytics settings were added on top of a config file that is committed to
+ * the author's git repo. The contract is the same one the frontmatter follows:
+ * a deployment that never enables analytics must never see its config file
+ * change because of the feature.
+ */
+describe("analytics settings are additive and ignored when unused", () => {
+  const legacy = {
+    title: "My Blog",
+    description: "Words.",
+    baseUrl: "https://blog.example.com",
+    author: "Sam",
+    defaultOgImage: "",
+    social: { twitter: "", github: "", linkedin: "" },
+    theme: { preset: "ocean", accent: "#336699", radius: "soft", headingFont: "serif" },
+  };
+
+  it("parses an old config with analytics disabled and the original theme intact", () => {
+    const config = siteConfigSchema.parse(legacy);
+    expect(config.analytics).toEqual({
+      enabled: false,
+      provider: "none",
+      websiteId: "",
+      baseUrl: "",
+      reportBaseUrl: "",
+    });
+    expect(config.theme.preset).toBe("ocean");
+    expect(config.title).toBe("My Blog");
+  });
+
+  it("serializes a legacy config without inventing an analytics block", () => {
+    const parsed = siteConfigSchema.parse(legacy);
+    const text = serializeSiteConfig(parsed);
+    expect(JSON.parse(text)).not.toHaveProperty("analytics");
+
+    // Byte-for-byte what the pre-analytics serializer wrote: JSON.stringify of
+    // the parsed config, with the analytics block removed.
+    const rest: Record<string, unknown> = { ...parsed };
+    delete rest.analytics;
+    expect(text).toBe(`${JSON.stringify(rest, null, 2)}\n`);
+  });
+
+  it("writes the analytics block once it is actually configured", () => {
+    const config = siteConfigSchema.parse({
+      ...legacy,
+      analytics: {
+        enabled: true,
+        provider: "umami",
+        websiteId: "8f2c",
+        baseUrl: "https://analytics.example.com",
+      },
+    });
+    const roundTripped = JSON.parse(serializeSiteConfig(config));
+    expect(roundTripped.analytics).toMatchObject({
+      enabled: true,
+      provider: "umami",
+      websiteId: "8f2c",
+    });
+    expect(roundTripped.theme.preset).toBe("ocean");
+  });
+
+  it("tolerates a malformed analytics URL instead of resetting the whole site config", () => {
+    // A typo in an optional integration must degrade that panel, not wipe the
+    // author's title, base URL and theme (which is what a throwing schema would
+    // cause, since both adapters fall back to DEFAULT_SITE_CONFIG on error).
+    const config = siteConfigSchema.parse({
+      ...legacy,
+      analytics: { enabled: true, provider: "umami", baseUrl: "not a url" },
+    });
+    expect(config.baseUrl).toBe("https://blog.example.com");
+    expect(config.theme.preset).toBe("ocean");
+    expect(config.analytics.baseUrl).toBe("not a url");
+  });
+
+  it("rejects an unknown provider rather than silently pretending it works", () => {
+    const result = siteConfigSchema.safeParse({
+      ...legacy,
+      analytics: { enabled: true, provider: "matomo" },
+    });
+    expect(result.success).toBe(false);
   });
 });

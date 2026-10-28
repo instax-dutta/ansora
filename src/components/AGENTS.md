@@ -5,7 +5,8 @@ Shared public components and admin-panel components (editor, score panel, image 
 
 ## Ownership
 - Public site: `Header.tsx`, `Footer.tsx`, `PostCard.tsx`, `Pagination.tsx`, `ProseHtml.tsx`, `Toc.tsx`, `ThemeToggle.tsx`, `JsonLd.tsx`, `TagLinks.tsx`, `SearchBox.tsx`
-- Admin panel: `admin/` — `PostEditor.tsx`, `MarkdownPreview.tsx`, `SettingsForm.tsx`, `ScorePanel.tsx`, `ShortcutPanel.tsx`, `ImageDialog.tsx`, `PostsTable.tsx`, `LoginForm.tsx`, `AdminHeader.tsx`
+- Admin panel: `admin/` — `PostEditor.tsx`, `MarkdownPreview.tsx`, `SettingsForm.tsx`, `ScorePanel.tsx`, `ShortcutPanel.tsx`, `ImageDialog.tsx`, `PostsTable.tsx`, `LoginForm.tsx`, `AdminHeader.tsx` (nav order is Dashboard, Posts, New post, Analytics, Settings — keep Analytics between Posts and Settings)
+- Analytics: `AnalyticsScript.tsx` (public, opt-in tracker) and `admin/analytics/` — `AnalyticsDashboard.tsx` (fetch + states), `AnalyticsOverview.tsx` (KPIs, trend, skeleton), `DateRangePicker.tsx`, `TrendChart.tsx`, `TopContentTable.tsx`, `SourceBreakdown.tsx`, `OpportunityList.tsx`, `PostPerformancePanel.tsx`, `AnalyticsSetupCard.tsx`, `format.ts`
 - `admin/MarkdownPreview.tsx` renders through `POST /api/admin/preview` (the shared server pipeline) — do NOT replace it with react-markdown; its synchronous `runSync` cannot host the async Shiki plugin chain (see `lib/markdown/AGENTS.md`).
 
 ## Local Contracts
@@ -19,13 +20,16 @@ Shared public components and admin-panel components (editor, score panel, image 
 - `Toc.tsx` has a `variant` prop: `card` for the desktop sidebar, `embedded` for the mobile `<details>` disclosure (the caller supplies the container). Do not delete `embedded` — without it every phone and tablet reader loses the outline, since the sidebar is `hidden lg:block`.
 - `PostEditor.tsx` requires a `config: SiteConfig` prop and accepts an optional `siblingPosts: PostMeta[]` (for the SERP/social previews). `PostEditor`'s `BLANK_META` must stay in sync with `postMetaSchema` — a missing field is a type error, which is the intended guard.
 - The two score rings in `ScorePanel.tsx` are **intentionally separate**. Do not average them into one number: a high traditional SEO score does not imply a citable post.
+- **`AnalyticsScript.tsx` returns `null` unless tracking is configured** — no tag, no request, no preconnect. It is mounted only by `(public)/layout.tsx`; never move it to the root layout or into a component that also renders on `/admin`.
+- **Analytics UI honesty:** a `null` metric renders as “—” with “not reported”, never `0`; a chart always ships the same numbers as a table; a provider outage keeps the last good numbers on screen and explains the staleness; and an unpublished path is never labelled with a post title. Charting has no dependency — do not add one.
+- `TrendChart` and the KPI cards are the only analytics components that draw numbers; keep formatting in `format.ts` so “—” and the change semantics stay identical everywhere.
 
 ## Work Guidance
 - Editor changes must keep the preview rendering through the same pipeline as the public site — no second rendering path.
 - Component tests: add a `// @vitest-environment jsdom` docblock (RTL + user-event).
 
 ## Verification
-- `npx vitest run src/components` (component tests).
+- `npx vitest run src/components` (component tests, including `AnalyticsScript.test.tsx` and `admin/analytics/`).
 
 ## Child DOX Index
 - No child AGENTS.md files needed.

@@ -240,6 +240,10 @@ the `.env.example` file and prompts you to fill them in during setup.
 | `GITHUB_CONTENT_PATH` | no | `content/posts` | Posts folder inside the repo |
 | `GITHUB_SITE_CONFIG_PATH` | no | `content/site.config.json` | Site config file inside the repo |
 | `CONTENT_REPO_MODE` | no | `same-repo` | `same-repo` (content in the app repo) or `external-repo` (separate content repo) — mostly affects how you back up |
+| `ANALYTICS_API_KEY` | optional | — | Server-side reporting credential for the analytics provider; never exposed to the browser |
+| `ANALYTICS_PROVIDER` / `ANALYTICS_BASE_URL` / `ANALYTICS_WEBSITE_ID` | no | — | Fallbacks for the analytics values normally saved in `content/site.config.json` |
+| `ANALYTICS_SCRIPT_ORIGIN` | optional | — | Tracker host the Content-Security-Policy must allow; **read at build time** |
+| `SITE_TIMEZONE` | no | `UTC` | IANA timezone every analytics date range is expressed in |
 
 > **Never commit real secrets.** `.env*` is gitignored (`.env.example` is kept).
 > In serverless mode the GitHub token needs write access: a fine-grained PAT
@@ -324,6 +328,38 @@ endpoint is rate-limited with a basic in-memory throttle):
   through the *same* render pipeline as the public site, frontmatter sidebar,
   FAQ repeater, and autosave (debounced ~3s — every save is a git commit).
 - **Settings** — site title/description/base URL/social links, plus **Appearance** (visual style preset, accent color, corner radius, heading font) — all stored in `content/site.config.json`.
+- **Analytics** — optional content performance: totals and trend for a chosen period, top content mapped to your published posts, traffic sources, per-post drilldown, CSV export, and evidence-backed suggestions. Off until you connect a provider in **Admin → Analytics**.
+
+### Analytics (optional)
+
+Ansora keeps **no visitor data**. It never writes pageviews to Markdown, never
+commits events to git and never counts them in memory — that would turn the
+content history into a high-churn event log. Instead you point it at a
+privacy-focused analytics service you control, and the Analytics section reads
+reports from it.
+
+1. Run [Umami](https://umami.is) (self-hosted or Cloud) and add your blog as a
+   website.
+2. In **Admin → Analytics**, enable collection, pick `Umami`, and paste the
+   website ID and tracker URL.
+3. Set the server-side reporting key where the site runs:
+
+```dotenv
+ANALYTICS_API_KEY=…            # never NEXT_PUBLIC_; never in site.config.json
+ANALYTICS_SCRIPT_ORIGIN=https://analytics.example.com
+```
+
+`ANALYTICS_SCRIPT_ORIGIN` is the host the browser must be allowed to load the
+tracker from, and it is read at **build** time because the
+Content-Security-Policy is compiled into the build. The Analytics panel tells
+you when it is missing.
+
+What this deliberately is not: no per-visitor tracking, no cross-site profiles,
+no query strings (UTM values are excluded), no tracking of `/admin`, `/api` or
+the `/md` mirror, no data written into feeds or metadata, and no Search Console
+impressions — those are a separate data source, not a proxy for pageviews.
+Disabled or unreachable, the blog renders, publishes and feeds exactly as
+before.
 
 ## Project structure
 

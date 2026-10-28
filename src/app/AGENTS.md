@@ -6,9 +6,12 @@ App Router routes: the public site, the admin panel, the admin API, and the mach
 ## Ownership
 - `layout.tsx` — root layout: fonts, metadata, feed autodiscovery default, and the **theme injection** (server-rendered `<style>` from site config; falls back to `DEFAULT_SITE_CONFIG` on config errors)
 - `globals.css` — Tailwind v4, live theme tokens, `prose-warm` article styles
+- `(public)/layout.tsx` — the public shell: Header + Footer + the **opt-in analytics tracker** (`<AnalyticsScript>`), which is why `/admin`, `/api` and `/md` can never load it
 - `(public)/` — `/`, `/blog`, `/blog/[slug]`, `/tags`, `/tags/[tag]`, `/topics`, `/about`
-- `admin/` — login + dashboard (posts list, editor, settings); guarded by `(dashboard)/layout.tsx` via `getSession()` → redirect to `/admin/login`
+- `admin/` — login + dashboard (posts list, editor, settings, analytics); guarded by `(dashboard)/layout.tsx` via `getSession()` → redirect to `/admin/login`
+- `admin/(dashboard)/analytics/` — the Analytics page (`/admin/analytics`) and the per-post drilldown (`/admin/analytics/posts/[slug]`); the drilldown `notFound()`s for anything unpublished
 - `api/admin/` — `login`, `logout`, `posts`, `posts/[slug]`, `settings`, `preview` (zod-validated, session-guarded; `preview` renders editor markdown through the shared server pipeline)
+- `api/admin/analytics/` — `overview`, `pages` (JSON or `?format=csv`), `posts/[slug]`, `health` (GET) and `verify`, `config` (POST/PUT, origin-guarded). Shared plumbing lives in `_shared.ts` (not a route): origin+session guard, bounded query parsing, published-post listing, `siteTimezone()`. Reporting responses are always `Cache-Control: private, no-store`, and a provider failure is a **200 with `degraded` set**, never a 500
 - `rss.xml/`, `feed.json`, `sitemap.ts`, `robots.ts`, `llms.txt/`, `llms-full.txt/`, `search-index.json/`, `md/` (markdown mirror)
 - `admin/(dashboard)/page.tsx` also renders the Search visibility + Content health panels
 - `api/seo-routes.test.ts` — integration tests for every machine-discovery surface
@@ -29,6 +32,7 @@ App Router routes: the public site, the admin panel, the admin API, and the mach
 - Admin API routes: 401 without a valid session; 403 via `isCrossOrigin()` when an Origin header claims a foreign host (CSRF defense-in-depth); `safeParse` request bodies against zod schemas; URL-path slugs validated with `isSafeSlug()` → 400 before adapter calls; never leak stack traces.
 - Security headers (CSP, HSTS, X-Frame-Options, nosniff, Referrer-Policy, Permissions-Policy) are defined once in `next.config.ts` — don't add per-route header overrides that weaken them; a nonce-based CSP would break SSG/ISR, so script/style keep `'unsafe-inline'`.
 - Error/404 pages must not leak stack traces.
+- **Analytics never touches the SEO surface.** The tracker is emitted by `(public)/layout.tsx` only (never `/admin`, `/api` or `/md`), no analytics setting may change a canonical URL, indexability, sitemap, feed or JSON-LD output, and no page may block rendering on a provider response. A degraded provider is reported in the panel and nowhere else.
 - The root-layout theme injection **must stay server-rendered** — do not move it client-side (breaks SSG and causes theme flash).
 
 ## Work Guidance
@@ -37,5 +41,5 @@ App Router routes: the public site, the admin panel, the admin API, and the mach
 - API route integration tests are colocated: `api/admin/*.test.ts`. Machine-surface tests live at `api/seo-routes.test.ts`; mock `@/lib/content` with `vi.hoisted` and replace `safeListPosts` rather than spreading the real module (the real one closes over the real `getAdapter` and would read from disk).
 
 ## Verification
-- `npx vitest run src/app/api` (route tests)
+- `npx vitest run src/app/api` (route tests, including `api/admin/analytics/routes.test.ts` — 401/403, bounded ranges, degradation, safe CSV, draft 404, no secrets)
 - `npm run build` — also proves every public route compiles and prerenders.

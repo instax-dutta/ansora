@@ -12,12 +12,13 @@ All non-UI logic: content adapters, auth, markdown pipeline, SEO/AEO scoring, en
 - `seo/` — the AI-search layer → see `seo/AGENTS.md`
 - `utils.ts` — slugify, `tagSlug`/`resolveTagFromSlug`, dates, word counts, escapeXml, stripMarkdown, truncate (pure, imported by client code)
 - `content/concurrency.ts` — `mapWithConcurrency`, the bounded-parallelism helper used by the GitHub adapter at width 16
+- `analytics/` — optional content-performance reporting (provider adapter, path→post mapping, cached aggregate reads, tracker policy) → see `analytics/AGENTS.md`
 
 ## Local Contracts
 - `auth/session.ts`: env credentials only; `verifyCredentials` **throws** on misconfiguration and runs a dummy bcrypt compare on username mismatch (no timing oracle); rate limit 5 failed attempts / 15 min per IP (in-memory, per-instance — soft in serverless) with a hard 10k-IP map cap; `isCrossOrigin(request)` is the CSRF guard used by every mutating admin API route.
 - `theme.ts`: palette hex lives here and in the `globals.css` fallbacks; accent derivation is WCAG-aware (`textOn`/`contrast`); `buildThemeCss` emits `html:root`/`html.dark` custom properties.
 - `utils.ts` `tagSlug`/`resolveTagFromSlug`: tags are stored and displayed verbatim, and these are pure URL helpers. Resolution is slug-based and case/encoding-insensitive so **legacy raw-tag URLs keep working**; every tag link must go through `tagSlug()`. Never rewrite a stored tag to its slug form.
-- Caches (site-config 30 s, GitHub adapter 60 s) are **per-instance** — never rely on cross-instance invalidation.
+- Caches (site-config 30 s, GitHub adapter 60 s, analytics reports 120 s) are **per-instance** — never rely on cross-instance invalidation. `invalidateSiteConfig()` exists for the one case where a write must be visible immediately (analytics settings decide which numbers the next report queries).
 
 ## Work Guidance
 - Keep `utils.ts` side-effect-free and node-import-free (client code imports it).
@@ -25,8 +26,10 @@ All non-UI logic: content adapters, auth, markdown pipeline, SEO/AEO scoring, en
 - Any new bulk surface that needs post *bodies* must go through `content/bodies.ts`, never `adapter.getPost()` in a loop — the cap and the wall-clock budget are a rate-limit and timeout guard, not a style choice.
 - **`listPosts()` must fetch file contents with `mapWithConcurrency`, never a sequential `for … await`.** Frontmatter needs the file body, so listing N posts costs N content reads; doing them serially made every uncached page pay N round-trip latencies.
 
+- Analytics is **optional by contract**: nothing under `lib/analytics` may be required for rendering, publishing, feeds or admin saves. Its provider failures are classified and rendered, never thrown through a route.
+
 ## Verification
-- `npx vitest run src/lib` (adapters, theme, seo-score, aeo-score, validate, backward-compat, utils tests).
+- `npx vitest run src/lib` (adapters, theme, seo-score, aeo-score, validate, backward-compat, utils, analytics tests).
 
 ## Child DOX Index
 | Path | Scope |
@@ -34,3 +37,4 @@ All non-UI logic: content adapters, auth, markdown pipeline, SEO/AEO scoring, en
 | `content/AGENTS.md` | adapter interface + LocalGit + GitHub adapters, body loading, related-post rules |
 | `markdown/AGENTS.md` | shared pipeline, renderer, SEO + AEO scorers |
 | `seo/AGENTS.md` | entity graph, publish policy, markdown docs, previews, metadata helpers |
+| `analytics/AGENTS.md` | provider contract + Umami adapter, query/path rules, tracker privacy, opportunities |

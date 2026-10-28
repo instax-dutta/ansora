@@ -118,7 +118,19 @@ The governing idea: **AI engines do not just read pages, they assemble an entity
 - **Indexability is visible to the owner.** `buildIndexabilityReport()` (`src/lib/seo/indexability.ts`) computes what the public routes decided — noIndex opt-outs, untagged posts, thin tag pages — from the same policy functions, and the admin dashboard renders it. An owner who cannot see these decisions has no way to tell "nothing is wrong" from "half my site is invisible", which is unacceptable for a product whose pitch is that it ranks like you hired someone.
 - **Bounded surfaces state their bounds.** RSS (10 full bodies), JSON Feed (20), llms-full.txt (100), the search index (500) all cap per-request work behind a wall-clock budget. A cap invisible to the consumer is indistinguishable from a bug, so llms-full.txt reports how many posts carry full text versus excerpt-only in its header *and* per section, and the search index reports `total` + `truncated`.
 
-### 4.5 Theme system (added later — do not regress)
+### 4.5 Analytics (added later — optional by contract)
+
+- **Ansora stores no visitor data.** Pageviews are never written to Markdown, never committed to git and never counted in process memory — a Git-backed event log would make the content history grow without bound and turn an immutable archive into a high-churn database. `src/lib/analytics/` reads *reports* from a configured provider instead.
+- **Provider boundary**: `AnalyticsProvider` (`lib/analytics/provider.ts`) with one adapter, `providers/umami.ts` (documented v2 endpoints: `/websites/{id}/stats|pageviews|metrics`, Bearer auth). Capabilities are declared per provider and the UI hides what a provider cannot report, so nothing is faked.
+- **Two independent questions**: `tracking` (a tracker is emitted on public pages — needs provider + website ID + tracker URL) and `reporting` (reports can be read — also needs `ANALYTICS_API_KEY`). A deployment can be collecting fine while the dashboard says “add an API key”.
+- **`null` is never `0`.** An unsupported metric renders as “—” with “not reported”, because “we do not measure this” and “nobody engaged” are different facts.
+- **Bounded reads**: query range capped at 366 days, row limits capped, `previousPeriod()` is always equal-length, and every provider call is cached 120 s behind a key that includes provider, website, range, timezone, granularity, report kind and filter (with single-flight de-duplication). A provider failure is a classified `degraded` payload on a 200, never a thrown 500, and it never reaches rendering, publishing, feeds or SEO metadata.
+- **Paths → posts** is one deterministic mapper (`lib/analytics/paths.ts`): origins, query strings, duplicate slashes and percent-encoding are normalised, and only a **published** slug resolves to a post. Drafts are never named, and `seo.noIndex` is displayed rather than hidden. Stored slugs are never rewritten to “fix” analytics.
+- **Privacy**: the tracker is mounted by `(public)/layout.tsx` only (`/admin`, `/api`, `/md`, feeds and machine endpoints are excluded), `data-exclude-search` keeps query strings out of the store, no cookies or fingerprints are created by Ansora, and `ANALYTICS_API_KEY` is server-side only.
+- **The CSP allowlist is a build-time input**: `next.config.ts` compiles `script-src`/`connect-src` from `ANALYTICS_SCRIPT_ORIGIN` / `ANALYTICS_BASE_URL` into the routes manifest, and bakes `ANSORA_ANALYTICS_CSP_ORIGINS` so the setup panel reports the policy the browser will actually enforce.
+- **Settings are additive**: `siteConfigSchema.analytics` is defaulted and omitted by `serializeSiteConfig()` while unused, so an existing deployment's `site.config.json` is untouched. Its URLs are validated at use time, not at parse time, so a typo in the optional integration cannot reset the author's title, base URL and theme.
+
+### 4.6 Theme system (added later — do not regress)
 
 - **Four curated presets** — `warm`, `ocean`, `forest`, `midnight` — each with a full light + dark palette, defined in **`src/lib/theme.ts`** (`THEME_PRESETS`). The Midnight preset uses navy backgrounds with a warm gold accent.
 - Admins can override **accent color** (derived `brandStrong`/`brandSoft`/`onBrand` computed with WCAG-aware `textOn`/`contrast`), **corner radius** (`RADIUS_SCALES` mapped onto Tailwind `--radius-*`), and **heading font** (`--font-serif` swap). A curated set of **accent swatches** (`ACCENT_SWATCHES`) appears as clickable color chips in the Appearance form.
@@ -141,13 +153,15 @@ src/
     layout.tsx            root layout: fonts, metadata, feed links, THEME INJECTION
     globals.css           Tailwind v4, live theme tokens, prose-warm styles
     (public)/             public site: /, /blog, /blog/[slug], /tags, /tags/[tag], /about
-    admin/                admin: login + (dashboard)/{posts,new,edit,settings}
+    admin/                admin: login + (dashboard)/{posts,new,edit,settings,analytics}
     api/admin/            API routes: login, logout, posts, posts/[slug], settings, preview
+    api/admin/analytics/  reports: overview, pages (+CSV), posts/[slug], health, verify, config
     api/seo-routes.test.ts  integration tests for the machine-discovery surfaces
     rss.xml, feed.json, sitemap.ts, robots.ts
     llms.txt/, llms-full.txt/, md/     machine-readable + markdown mirror
     not-found, error, global-error
-  components/             shared + admin components (Header, PostCard, PostEditor, JsonLd, …)
+  components/             shared + admin components (Header, PostCard, PostEditor, JsonLd,
+                          AnalyticsScript, admin/analytics/*)
   lib/
     content/              adapter pattern: index, local-git, github, types, cache,
                           bodies (bounded body loading), related (crawl graph)
@@ -155,6 +169,8 @@ src/
     markdown/             pipeline, render, seo-score, aeo-score (+ fixtures)
     seo/                  jsonld (entity graph), publish (indexability policy),
                           markdown-doc, metadata, preview
+    analytics/            provider contract + umami adapter, query bounds, path→post
+                          mapping, report cache, CSV export, opportunities, tracker rules
     site-config.ts        getSiteConfig() — 30 s TTL cache, SITE_URL seeds baseUrl
     theme.ts              presets + buildThemeCss (THEME ENGINE)
     utils.ts              slugify, tagSlug, dates, word counts, escapeXml, stripMarkdown
@@ -307,7 +323,9 @@ npm run verify-serverless  # end-to-end harness against a scratch GitHub repo
 ## 13. Known edges & gotchas
 
 - **Graceful reads, loud writes**: public read surfaces never hard-fail when the content adapter is unreachable. `getSiteConfig()` falls back to `DEFAULT_SITE_CONFIG` and `safeListPosts()` returns `[]` (both log a `console.warn`) — so a serverless-mode build without `GITHUB_REPO`/`GITHUB_TOKEN` still succeeds, and transient adapter errors render an empty-but-live site instead of a 500. Admin/API **write** paths (and admin reads) still surface adapter errors loudly. Tests: `src/lib/content/resilience.test.ts`.
-- **Caches are per-instance**: `getSiteConfig()` (30 s TTL) and the GitHub adapter's 60 s TTL caches live in module memory. In serverless, instances can briefly disagree; admin writes invalidate only the local instance.
+- **Caches are per-instance**: `getSiteConfig()` (30 s TTL), the GitHub adapter (60 s) and analytics reports (120 s) live in module memory. In serverless, instances can briefly disagree; admin writes invalidate only the local instance (`invalidateSiteConfig()` exists for the analytics settings write, where a stale config would query the wrong site).
+- **Analytics is never load-bearing**: disabling it, misconfiguring it, having no provider key or having the provider down all leave rendering, publishing, feeds, SEO metadata and admin saves exactly as they were. Nothing in the public path waits on a provider, and the tracker emits nothing at all when it is off.
+- **CSP origins for the tracker are fixed at build time**, because Next compiles `headers()` into `.next/routes-manifest.json`. Setting `ANALYTICS_SCRIPT_ORIGIN` only at runtime changes nothing; the admin panel detects the mismatch via the baked `ANSORA_ANALYTICS_CSP_ORIGINS` and tells you to rebuild.
 - **Login throttle is per-instance** in serverless — a soft rate limit by design, documented in `session.ts`.
 - **Fresh content repos**: the GitHub adapter warns and treats a branch with no commits as empty — a brand-new repo before the first save will look empty (expected).
 - **`verify-serverless.sh`** snapshots and restores the content repo, but don't run it while anything else commits to that repo.

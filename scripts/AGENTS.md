@@ -7,6 +7,7 @@ Dev/admin helpers: password hashing, GitHub content-repo utilities, and the end-
 - `hash-password.mjs` — generates bcrypt hashes for `ADMIN_PASSWORD_HASH` (`npm run hash-password`)
 - `github-repo.mjs` — `ls | get | snapshot | restore | commits` against a content repo (needs `GITHUB_REPO` + `GITHUB_TOKEN`)
 - `verify-serverless.sh` — full serverless-mode harness (login, post CRUD, settings, commit verification; snapshots + restores the repo)
+- `check-analytics-docs.mjs` — asserts the DOX chain documents analytics (child doc, parent indexes, README, `.env.example`); used as a runnable gate, not run in CI
 
 ## Local Contracts
 - `github-repo.mjs` needs env vars: run `node --env-file=.env.local scripts/github-repo.mjs <command>`.
@@ -19,6 +20,7 @@ Dev/admin helpers: password hashing, GitHub content-repo utilities, and the end-
 
 ## Verification
 - `bash scripts/verify-serverless.sh` (against a scratch content repo).
+- `node scripts/check-analytics-docs.mjs` → prints `analytics docs verification passed`, exits 1 listing every missing doc claim.
 
 ## Child DOX Index
 - No child AGENTS.md files needed.

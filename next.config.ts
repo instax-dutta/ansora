@@ -1,6 +1,38 @@
 import type { NextConfig } from "next";
 
 /**
+ * Origins the configured analytics tracker needs the CSP to allow.
+ *
+ * A private, self-hosted analytics instance is a different origin from the
+ * blog, and `script-src 'self'` blocks it outright — the tracker silently never
+ * loads and the dashboard just looks empty. Rather than weakening the policy
+ * with a blanket `https:`, the deployment names its tracker host in
+ * `ANALYTICS_SCRIPT_ORIGIN` (or `ANALYTICS_BASE_URL`), and only that origin is
+ * added to `script-src` and `connect-src`.
+ *
+ * Deliberately env-only: this file cannot read the content repo, and a
+ * deployment-level policy belongs in deployment-level configuration. The admin
+ * Analytics panel warns when the saved tracker host is not allowed here.
+ */
+function analyticsOrigins(): string[] {
+  const origins = new Set<string>();
+  for (const raw of [process.env.ANALYTICS_SCRIPT_ORIGIN, process.env.ANALYTICS_BASE_URL]) {
+    const value = (raw ?? "").trim();
+    if (!value) continue;
+    try {
+      const url = new URL(/^[a-z][a-z0-9+.-]*:\/\//i.test(value) ? value : `https://${value}`);
+      if (url.protocol === "http:" || url.protocol === "https:") origins.add(url.origin);
+    } catch {
+      // A malformed value simply does not widen the policy.
+    }
+  }
+  return [...origins];
+}
+
+const ANALYTICS_ORIGINS = analyticsOrigins();
+const ANALYTICS_ORIGIN_SUFFIX = ANALYTICS_ORIGINS.length ? ` ${ANALYTICS_ORIGINS.join(" ")}` : "";
+
+/**
  * Baseline security headers for every route. Kept deliberately compatible
  * with Next.js's inline bootstrap scripts and the server-rendered theme
  * <style> block (hence 'unsafe-inline' for script-src/style-src) — a
@@ -25,9 +57,11 @@ const SECURITY_HEADERS = [
       "default-src 'self'",
       "img-src 'self' https: data:",
       "style-src 'self' 'unsafe-inline'",
-      "script-src 'self' 'unsafe-inline'",
+      `script-src 'self' 'unsafe-inline'${ANALYTICS_ORIGIN_SUFFIX}`,
       "font-src 'self' data:",
-      "connect-src 'self'",
+      // The tracker posts pageviews back to its own origin, so that origin has
+      // to be reachable as well as loadable.
+      `connect-src 'self'${ANALYTICS_ORIGIN_SUFFIX}`,
       "object-src 'none'",
       "base-uri 'self'",
       "form-action 'self'",
@@ -37,6 +71,17 @@ const SECURITY_HEADERS = [
 ];
 
 const nextConfig: NextConfig = {
+  /**
+   * Bake the CSP's analytics allowlist into the build.
+   *
+   * `headers()` is compiled into `.next/routes-manifest.json` at build time, so
+   * the browser policy cannot change on restart — which means a deployment that
+   * sets ANALYTICS_SCRIPT_ORIGIN only at runtime still gets a policy without it.
+   * The admin Analytics panel reads this baked value to decide whether to warn,
+   * so it reports the policy the browser will actually enforce instead of the
+   * environment it was asked about.
+   */
+  env: { ANSORA_ANALYTICS_CSP_ORIGINS: ANALYTICS_ORIGINS.join(" ") },
   // Standalone output lets the Dockerfile ship a minimal production server.
   // On Vercel it's unnecessary and breaks its build (missing
   // .next/next-server.js.nft.json), so only enable it off-platform.

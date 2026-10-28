@@ -7,7 +7,7 @@ The **ContentAdapter pattern** — the heart of Ansora. All content I/O goes thr
 - `index.ts` — `ContentAdapter` interface + `getAdapter()` (the **only** place that branches on `DEPLOYMENT_MODE`) + `safeListPosts()`
 - `local-git.ts` — `LocalGitAdapter`: disk + `simple-git` commits (optional push via `GIT_AUTO_PUSH`)
 - `github.ts` — `GitHubApiAdapter`: octokit Contents API, SHA-based updates, and tree-SHA-aware parsed-list caching
-- `types.ts` — zod schemas: `postMetaSchema`, `siteConfigSchema`, `themeConfigSchema` + defaults; **strict vs tolerant parsing** (see below) (`accent` must be hex or empty; `baseUrl` must be an absolute http(s) URL)
+- `types.ts` — zod schemas: `postMetaSchema`, `siteConfigSchema`, `themeConfigSchema`, `analyticsConfigSchema` + defaults; `serializeSiteConfig()`; **strict vs tolerant parsing** (see below) (`accent` must be hex or empty; `baseUrl` must be an absolute http(s) URL)
 - `slug.ts` — `isSafeSlug()` slug safety gate: both adapters call it before any slug touches a file path / repo path (path-traversal defense)
 - `cache.ts` — `TtlCache` (in-memory, per-instance)
 - `bodies.ts` — `loadRecentBodies` / `loadPublishedPost` / `loadPublishedBodies` for surfaces that need post *content*; bounded by a count cap **and** a wall-clock budget
@@ -30,6 +30,8 @@ The **ContentAdapter pattern** — the heart of Ansora. All content I/O goes thr
 - **Transient failures get exactly one retry.** 403/429/5xx retry once after a short backoff on both `getTree` and `getFileRaw`. 404 is not an error — it means absent and must still translate to `null` on both the first attempt and the retry. Never loop: genuine quota exhaustion should still fail.
 - **Forward concurrency changes: run a hostile test.** Put N posts in a content dir, make one field the wrong type, and confirm all N still render. A schema change that only gets the happy path tested is untested.
 - **Backward compatibility is a hard contract.** Every frontmatter field added after v0.1 must be `.default()`-ed and omitted by `serializeFrontmatter` when empty, so opening and re-saving a pre-existing post does not rewrite the author's content repo. `backward-compat.test.ts` locks this in; extend it when you add a field.
+- **Site config follows the same rule** via `serializeSiteConfig()`: the optional `analytics` block is omitted while it holds nothing but defaults, and both adapters use that serializer (so an unused integration cannot rewrite `site.config.json` or create a commit for it).
+- **The analytics block stores public values only** — provider, website ID, tracker URL and an optional reporting API base. The reporting credential is `ANALYTICS_API_KEY`, server-side, and must never be written here (this file is committed to git). Its URLs are validated where they are used, not at parse time: a throwing refinement would make `siteConfigSchema.parse` fail and both adapters answer that with `DEFAULT_SITE_CONFIG`, silently resetting the author's title, base URL and theme over an optional integration's typo.
 - **`listPosts()` returns frontmatter only** — bodies are not cached with it. In the GitHub adapter `listPosts()` already fetches every post file and discards the body, so any surface needing bodies pays a second round of per-post requests. Route all of that through `bodies.ts` and keep the cap explicit.
 - `relatedPosts` / `postNeighbours` must filter with the shared `isIndexable()` policy (drafts and noIndex posts are not link targets).
 - **`listPosts()` must use `mapWithConcurrency(files, 16, …)`**, never a sequential loop. It already fetches every post file to parse frontmatter, so N posts means N content reads; serially that dominated the latency of every uncached page. **Width is 8, not 16:** concurrency does not change the number of calls, only how fast they arrive, and a burst is what trips a secondary rate limit — which blanks the whole site, not one post. The ~20% latency win was never worth that. This is *not* a freshness trade-off: the tree-SHA cache from `3fab213` is untouched, so a content commit still shows up immediately. Never add a persistent cache layer in front of `listPosts()` — that is precisely the regression `3fab213` fixed.
@@ -38,7 +40,7 @@ The **ContentAdapter pattern** — the heart of Ansora. All content I/O goes thr
 ## Work Guidance
 - Never call the GitHub API or read content files outside this folder.
 - Keep reads cached with short TTLs — the GitHub REST API is rate-limited.
-- Schema changes (`types.ts`) ripple to: both adapters' serialization, `DEFAULT_SITE_CONFIG`, `serializeFrontmatter`, the admin `SettingsForm`, `PostEditor`'s `BLANK_META`, and the test fixtures in `validate.test.ts` / `backward-compat.test.ts`.
+- Schema changes (`types.ts`) ripple to: both adapters' serialization, `DEFAULT_SITE_CONFIG`, `serializeFrontmatter`, `serializeSiteConfig`, the admin `SettingsForm`, `PostEditor`'s `BLANK_META`, and the test fixtures in `validate.test.ts` / `backward-compat.test.ts`. Test fixtures that build a `SiteConfig` literal should spread `DEFAULT_SITE_CONFIG` so the next added field cannot break them.
 
 ## Verification
 - `npx vitest run src/lib/content` (local-git, github, validate, related, backward-compat).

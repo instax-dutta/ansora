@@ -20,6 +20,15 @@ RUN npm ci
 FROM base AS builder
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
+#
+# The Content-Security-Policy is compiled into the build, so a tracker served
+# from another origin has to be named here rather than at runtime:
+#   docker build --build-arg ANALYTICS_SCRIPT_ORIGIN=https://analytics.example.com .
+# Optional; leaving them empty keeps script-src at 'self'.
+ARG ANALYTICS_SCRIPT_ORIGIN=""
+ARG ANALYTICS_BASE_URL=""
+ENV ANALYTICS_SCRIPT_ORIGIN=$ANALYTICS_SCRIPT_ORIGIN
+ENV ANALYTICS_BASE_URL=$ANALYTICS_BASE_URL
 RUN npm run build
 
 # Runtime

@@ -75,11 +75,15 @@ Default section order:
 - **Drafts are private** — unpublished posts must 404 on every public route (pages, RSS, feeds, sitemap, llms.txt, `/md/*`, JSON-LD).
 - **`seo.noIndex` is honored everywhere** — an opted-out post must not be advertised in the sitemap, RSS, the JSON feed or llms.txt. Route that through `isIndexable()` in `src/lib/seo/publish.ts`.
 - **Backward compatibility is a product requirement.** Ansora runs live blogs; their markdown files and URLs are in git and cannot be migrated. Content-model changes must be additive + defaulted + omitted when empty; URL changes must keep old URLs resolving. See `src/lib/content/AGENTS.md` and `src/lib/content/backward-compat.test.ts`.
+- **Analytics is opt-in and stores nothing itself.** Ansora keeps no database and no event store: pageviews are read from a configured provider through `lib/analytics`, never written to Markdown, never committed, never counted in memory. Reporting credentials live only in `ANALYTICS_API_KEY` (server-side, never `NEXT_PUBLIC_`); the tracker is emitted on public pages only, and the Content-Security-Policy origin it needs is a **build-time** input (`ANALYTICS_SCRIPT_ORIGIN`). See `src/lib/analytics/AGENTS.md`.
 - **No plaintext secrets** — only the bcrypt `ADMIN_PASSWORD_HASH`; never log credentials or tokens.
 - **Components use theme tokens, not hex colors.** Palette hex lives only in `src/lib/theme.ts` and the `globals.css` fallbacks.
 - **SEO/AEO surface is non-negotiable** — canonical URLs, metadata, JSON-LD entity graph, RSS/JSON Feed/sitemap/robots/llms.txt/llms-full.txt, markdown content negotiation stay correct.
-- **Security baseline (audited 2026-08):** slugs are validated by `isSafeSlug()` inside both content adapters before touching any path; every mutating admin API route runs `isCrossOrigin()`; site-wide security headers live only in `next.config.ts`; JSON-LD embeds through `serializeJsonLd()`/`components/JsonLd.tsx`. Do not bypass any of these.
+- **Security baseline (audited 2026-08):** slugs are validated by `isSafeSlug()` inside both content adapters before touching any path; every mutating admin API route runs `isCrossOrigin()`; site-wide security headers live only in `next.config.ts` (the analytics CSP allowlist is compiled there from `ANALYTICS_SCRIPT_ORIGIN` and is therefore a **build-time** input — do not add a second, runtime CSP source); JSON-LD embeds through `serializeJsonLd()`/`components/JsonLd.tsx`. Do not bypass any of these.
 - **Deep reference:** `foundation.md` is the canonical codebase knowledge doc — read it before major work.
+
+## Child DOX Index updates
+- `src/lib/analytics/AGENTS.md` owns the analytics contract (provider adapter, query bounds, path→post mapping, tracker privacy, opportunities). Parent indexes: root (this file), `src/AGENTS.md`, `src/lib/AGENTS.md`, `src/app/AGENTS.md`, `src/components/AGENTS.md`, `src/lib/content/AGENTS.md`.
 
 ## Child DOX Index
 | Path | Scope | Contract |

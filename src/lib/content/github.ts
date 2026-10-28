@@ -20,6 +20,7 @@ import {
   DEFAULT_SITE_CONFIG,
   normalizeFrontmatter,
   normalizeFrontmatterLoose,
+  serializeSiteConfig,
   siteConfigSchema,
 } from "./types";
 
@@ -331,8 +332,10 @@ export class GitHubApiAdapter implements ContentAdapter {
   }
 
   async saveSiteConfig(config: SiteConfig): Promise<void> {
-    const content = `${JSON.stringify(config, null, 2)}
-`;
+    // `serializeSiteConfig` keeps unused optional blocks (analytics) out of the
+    // file, so an existing site.config.json is not rewritten just because the
+    // schema grew. Identical formatting to the previous JSON.stringify call.
+    const content = serializeSiteConfig(config);
 
     // Same no-op guard as savePost — don't commit unchanged config.
     const current = await this.getFileRaw(this.options.configPath);

@@ -9,6 +9,9 @@ const NAV = [
   { href: "/admin", label: "Dashboard" },
   { href: "/admin/posts", label: "Posts" },
   { href: "/admin/posts/new", label: "New post" },
+  // Between Posts and Settings: content first, then how it performs, then the
+  // site-wide controls — the order an author actually works in.
+  { href: "/admin/analytics", label: "Analytics" },
   { href: "/admin/settings", label: "Settings" },
 ];
 

@@ -264,6 +264,39 @@ export const DEFAULT_THEME_CONFIG: ThemeConfig = {
   headingFont: "serif",
 };
 
+/**
+ * Optional analytics integration (see src/lib/analytics).
+ *
+ * Public, non-secret settings only. The reporting API key lives in the
+ * `ANALYTICS_API_KEY` environment variable and never in a file that git tracks.
+ *
+ * The URL fields are plain strings on purpose: validating them at parse time
+ * would make one typo throw out of `siteConfigSchema.parse`, and both adapters
+ * answer that with `DEFAULT_SITE_CONFIG` — silently resetting the author's
+ * theme, title and base URL. They are validated where they are used instead
+ * (`apiBaseFor` / `trackerConfigFor`), which degrades only the analytics panel.
+ */
+export const analyticsConfigSchema = z.object({
+  /** Explicit opt-in. Analytics stays off until an author turns it on. */
+  enabled: z.boolean().default(false),
+  provider: z.enum(["none", "umami"]).default("none"),
+  /** Public site identifier used by the tracker. Not a credential. */
+  websiteId: z.string().default(""),
+  /** Tracker host / provider instance, e.g. https://analytics.example.com */
+  baseUrl: z.string().default(""),
+  /** Reporting API base when it differs from the instance (e.g. Cloud /v1). */
+  reportBaseUrl: z.string().default(""),
+});
+export type AnalyticsConfig = z.infer<typeof analyticsConfigSchema>;
+
+export const DEFAULT_ANALYTICS_CONFIG: AnalyticsConfig = {
+  enabled: false,
+  provider: "none",
+  websiteId: "",
+  baseUrl: "",
+  reportBaseUrl: "",
+};
+
 /** Must be an absolute http(s) URL — it feeds canonical tags, sitemap, RSS. */
 function isHttpUrl(value: string): boolean {
   try {
@@ -298,6 +331,7 @@ export const siteConfigSchema = z.object({
     })
     .default({ twitter: "", github: "", linkedin: "" }),
   theme: themeConfigSchema.default(DEFAULT_THEME_CONFIG),
+  analytics: analyticsConfigSchema.default(DEFAULT_ANALYTICS_CONFIG),
 });
 export type SiteConfig = z.infer<typeof siteConfigSchema>;
 
@@ -311,4 +345,27 @@ export const DEFAULT_SITE_CONFIG: SiteConfig = {
   defaultOgImage: "",
   social: { twitter: "", github: "", linkedin: "" },
   theme: DEFAULT_THEME_CONFIG,
+  analytics: DEFAULT_ANALYTICS_CONFIG,
 };
+
+/**
+ * Serialize site config for the content repo.
+ *
+ * The analytics block is omitted while it holds nothing but defaults. That is
+ * the same contract as `serializeFrontmatter`: saving settings on a deployment
+ * that never enabled analytics must not add a block to `site.config.json` and
+ * create a commit for it. Every other key is written exactly as before, so the
+ * file for an existing site stays byte-identical.
+ */
+export function serializeSiteConfig(config: SiteConfig): string {
+  const { analytics, ...rest } = config;
+  const analyticsIsDefault =
+    !analytics.enabled &&
+    analytics.provider === "none" &&
+    !analytics.websiteId.trim() &&
+    !analytics.baseUrl.trim() &&
+    !analytics.reportBaseUrl.trim();
+
+  const out = analyticsIsDefault ? rest : { ...rest, analytics };
+  return `${JSON.stringify(out, null, 2)}\n`;
+}

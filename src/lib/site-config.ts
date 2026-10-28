@@ -9,6 +9,19 @@ const TTL_MS = 30_000;
 let cached: SiteConfig | null = null;
 let cachedAt = 0;
 
+/**
+ * Drop the cached config after a write.
+ *
+ * Without this, saving settings leaves this instance serving the previous
+ * config for up to the TTL — invisible for the visual theme (the caller already
+ * has the new values in hand) but wrong for analytics, where the saved provider
+ * and website ID decide which numbers the next report queries.
+ */
+export function invalidateSiteConfig(): void {
+  cached = null;
+  cachedAt = 0;
+}
+
 export async function getSiteConfig(): Promise<SiteConfig> {
   const now = Date.now();
   if (cached && now - cachedAt < TTL_MS) return cached;

@@ -21,6 +21,7 @@ import {
   DEFAULT_SITE_CONFIG,
   normalizeFrontmatter,
   normalizeFrontmatterLoose,
+  serializeSiteConfig,
   siteConfigSchema,
 } from "./types";
 
@@ -174,11 +175,15 @@ export class LocalGitAdapter implements ContentAdapter {
   }
 
   async saveSiteConfig(config: SiteConfig): Promise<void> {
-    await fs.writeFile(
-      this.configPath,
-      `${JSON.stringify(config, null, 2)}\n`,
-      "utf8"
-    );
+    // `serializeSiteConfig` (not plain JSON.stringify) so an unused optional
+    // block — analytics — is never written into the author's file. That keeps
+    // the no-op guard meaningful: saving unchanged settings still commits
+    // nothing.
+    const raw = await fs.readFile(this.configPath, "utf8").catch(() => null);
+    const next = serializeSiteConfig(config);
+    if (raw === next) return;
+
+    await fs.writeFile(this.configPath, next, "utf8");
     await this.commit([this.configPath], "Update site config");
   }
 }

@@ -34,6 +34,14 @@ services:
         sync: false
       - key: SITE_URL
         sync: false
+      # Optional analytics. ANALYTICS_SCRIPT_ORIGIN is a build-time input (the
+      # CSP is compiled into the build), so changing it requires a redeploy.
+      - key: ANALYTICS_API_KEY
+        sync: false
+      - key: ANALYTICS_SCRIPT_ORIGIN
+        sync: false
+      - key: SITE_TIMEZONE
+        value: UTC
     disk:
       name: ansora-content
       mountPath: /app/content

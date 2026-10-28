@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import type { PostMeta, SiteConfig } from "@/lib/content/types";
+import { DEFAULT_SITE_CONFIG, type PostMeta, type SiteConfig } from "@/lib/content/types";
 import {
   aboutUrl,
   authorId,
@@ -14,7 +14,9 @@ import {
   tagUrl,
 } from "./jsonld";
 
+// Spread the defaults so a field added to the schema cannot break this fixture.
 const CONFIG: SiteConfig = {
+  ...DEFAULT_SITE_CONFIG,
   title: "Quiet Notes",
   description: "Writing about the open web.",
   baseUrl: "https://notes.example.com/",

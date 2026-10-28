@@ -1,6 +1,13 @@
 services:
   ansora:
-    build: .
+    build:
+      context: .
+      args:
+        # Build-time only: the CSP is compiled into the build, so the tracker
+        # host must be known here. Set it in .env, or the browser blocks the
+        # tracker (the admin Analytics panel says so).
+        ANALYTICS_SCRIPT_ORIGIN: ${ANALYTICS_SCRIPT_ORIGIN:-}
+        ANALYTICS_BASE_URL: ${ANALYTICS_BASE_URL:-}
     ports:
       - "3000:3000"
     environment:
@@ -17,6 +24,12 @@ services:
       CONTENT_DIR: /app/content
       # Optional: push content commits to a remote after every save
       GIT_AUTO_PUSH: ${GIT_AUTO_PUSH:-false}
+      # Optional analytics (see the README). The provider, website ID and
+      # tracker URL are saved in site.config.json via Admin -> Analytics; the
+      # reporting key is server-side only and never reaches the browser.
+      ANALYTICS_API_KEY: ${ANALYTICS_API_KEY:-}
+      ANALYTICS_SCRIPT_ORIGIN: ${ANALYTICS_SCRIPT_ORIGIN:-}
+      SITE_TIMEZONE: ${SITE_TIMEZONE:-UTC}
     volumes:
       # Posts + site config live here and survive container rebuilds.
       - ./content:/app/content
