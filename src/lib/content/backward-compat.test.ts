@@ -107,7 +107,7 @@ describe("site config backward compatibility", () => {
       author: "Sam",
       defaultOgImage: "",
       social: { twitter: "", github: "https://github.com/sam", linkedin: "" },
-      theme: { preset: "warm", accent: "", radius: "soft", headingFont: "serif" },
+      theme: { preset: "amberglow", accent: "", radius: "soft", headingFont: "serif" },
     };
     const config = siteConfigSchema.parse(legacy);
     expect(config.author).toBe("Sam");
@@ -115,7 +115,7 @@ describe("site config backward compatibility", () => {
     expect(config.authorRole).toBe("");
     // Existing keys survive untouched.
     expect(config.social.github).toBe("https://github.com/sam");
-    expect(config.theme.preset).toBe("warm");
+    expect(config.theme.preset).toBe("amberglow");
   });
 
   it("keeps the exported default config valid against the schema", () => {
@@ -137,7 +137,7 @@ describe("analytics settings are additive and ignored when unused", () => {
     author: "Sam",
     defaultOgImage: "",
     social: { twitter: "", github: "", linkedin: "" },
-    theme: { preset: "ocean", accent: "#336699", radius: "soft", headingFont: "serif" },
+    theme: { preset: "abyss", accent: "#336699", radius: "soft", headingFont: "serif" },
   };
 
   it("parses an old config with analytics disabled and the original theme intact", () => {
@@ -149,7 +149,7 @@ describe("analytics settings are additive and ignored when unused", () => {
       baseUrl: "",
       reportBaseUrl: "",
     });
-    expect(config.theme.preset).toBe("ocean");
+    expect(config.theme.preset).toBe("abyss");
     expect(config.title).toBe("My Blog");
   });
 
@@ -181,7 +181,7 @@ describe("analytics settings are additive and ignored when unused", () => {
       provider: "umami",
       websiteId: "8f2c",
     });
-    expect(roundTripped.theme.preset).toBe("ocean");
+    expect(roundTripped.theme.preset).toBe("abyss");
   });
 
   it("tolerates a malformed analytics URL instead of resetting the whole site config", () => {
@@ -193,7 +193,7 @@ describe("analytics settings are additive and ignored when unused", () => {
       analytics: { enabled: true, provider: "umami", baseUrl: "not a url" },
     });
     expect(config.baseUrl).toBe("https://blog.example.com");
-    expect(config.theme.preset).toBe("ocean");
+    expect(config.theme.preset).toBe("abyss");
     expect(config.analytics.baseUrl).toBe("not a url");
   });
 

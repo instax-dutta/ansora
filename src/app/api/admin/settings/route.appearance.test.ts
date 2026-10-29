@@ -106,7 +106,7 @@ describe("Appearance settings — API save → root layout render", () => {
     const res = await putSettings(
       jsonRequest("/api/admin/settings", "PUT", {
         theme: {
-          preset: "ocean",
+          preset: "abyss",
           accent: "#0f6d86",
           radius: "rounded",
           headingFont: "sans",
@@ -120,7 +120,7 @@ describe("Appearance settings — API save → root layout render", () => {
       expect.objectContaining({
         title: "Ansora", // untouched fields keep their schema defaults
         theme: {
-          preset: "ocean",
+          preset: "abyss",
           accent: "#0f6d86",
           radius: "rounded",
           headingFont: "sans",
@@ -152,7 +152,7 @@ describe("Appearance settings — API save → root layout render", () => {
     await putSettings(
       jsonRequest("/api/admin/settings", "PUT", {
         theme: {
-          preset: "ocean",
+          preset: "abyss",
           accent: "#0f6d86",
           radius: "rounded",
           headingFont: "sans",
@@ -171,10 +171,10 @@ describe("Appearance settings — API save → root layout render", () => {
     // Precomputed: mix("#0f6d86", "#ffffff", 0.82) → #d4e5e9
     expect(html).toContain("--brand-soft:#d4e5e9");
     // …the ocean preset's paper in light mode…
-    expect(html).toContain(`--paper:${THEME_PRESETS.ocean.light.paper}`);
+    expect(html).toContain(`--paper:${THEME_PRESETS.abyss.light.paper}`);
     // …a dark-mode block with the ocean dark palette…
     expect(html).toContain("html.dark{");
-    expect(html).toContain(`--paper:${THEME_PRESETS.ocean.dark.paper}`);
+    expect(html).toContain(`--paper:${THEME_PRESETS.abyss.dark.paper}`);
     // …the rounded radius scale…
     expect(html).toContain("--radius-2xl:1.5rem");
     // …and sans headings.
@@ -185,17 +185,17 @@ describe("Appearance settings — API save → root layout render", () => {
     await authed();
     await putSettings(
       jsonRequest("/api/admin/settings", "PUT", {
-        theme: { preset: "ocean", accent: "" },
+        theme: { preset: "abyss", accent: "" },
       })
     );
 
     const html = await renderRootLayout();
 
     // No custom accent → resolveTheme returns the preset's palette directly.
-    expect(html).toContain(`--brand:${THEME_PRESETS.ocean.light.brand}`);
-    expect(html).toContain(`--brand-strong:${THEME_PRESETS.ocean.light.brandStrong}`);
-    expect(html).toContain(`--brand-soft:${THEME_PRESETS.ocean.light.brandSoft}`);
-    expect(html).toContain(`--paper:${THEME_PRESETS.ocean.light.paper}`);
+    expect(html).toContain(`--brand:${THEME_PRESETS.abyss.light.brand}`);
+    expect(html).toContain(`--brand-strong:${THEME_PRESETS.abyss.light.brandStrong}`);
+    expect(html).toContain(`--brand-soft:${THEME_PRESETS.abyss.light.brandSoft}`);
+    expect(html).toContain(`--paper:${THEME_PRESETS.abyss.light.paper}`);
   });
 
   it("renders the midnight preset's dark mood with gold accent", async () => {
@@ -203,7 +203,7 @@ describe("Appearance settings — API save → root layout render", () => {
     await putSettings(
       jsonRequest("/api/admin/settings", "PUT", {
         theme: {
-          preset: "midnight",
+          preset: "noir",
           accent: "#d4a017",
           radius: "sharp",
           headingFont: "sans",
@@ -214,8 +214,8 @@ describe("Appearance settings — API save → root layout render", () => {
     const html = await renderRootLayout();
 
     // Preset's dark paper…
-    expect(html).toContain(`--paper:${THEME_PRESETS.midnight.dark.paper}`);
-    expect(html).toContain(`--surface:${THEME_PRESETS.midnight.dark.surface}`);
+    expect(html).toContain(`--paper:${THEME_PRESETS.noir.dark.paper}`);
+    expect(html).toContain(`--surface:${THEME_PRESETS.noir.dark.surface}`);
     // …custom gold accent…
     expect(html).toContain("--brand:#d4a017");
     // …sharp radius (the smallest scale)…
@@ -231,8 +231,8 @@ describe("Appearance settings — API save → root layout render", () => {
     const html = await renderRootLayout();
 
     expect(html).toContain("html:root{");
-    expect(html).toContain(`--brand:${THEME_PRESETS.warm.light.brand}`);
-    expect(html).toContain(`--paper:${THEME_PRESETS.warm.light.paper}`);
+    expect(html).toContain(`--brand:${THEME_PRESETS.amberglow.light.brand}`);
+    expect(html).toContain(`--paper:${THEME_PRESETS.amberglow.light.paper}`);
     expect(html).toContain("--font-serif:var(--font-fraunces)");
     expect(html).toContain("--radius-2xl:1rem"); // "soft" is the default scale
   });

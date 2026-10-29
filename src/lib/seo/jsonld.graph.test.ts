@@ -30,7 +30,7 @@ const CONFIG: SiteConfig = {
     linkedin: "",
   },
   theme: {
-    preset: "warm",
+    preset: "amberglow",
     accent: "",
     radius: "soft",
     headingFont: "serif",

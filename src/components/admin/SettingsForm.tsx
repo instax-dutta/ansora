@@ -61,7 +61,7 @@ export function SettingsForm({ initial }: { initial: SiteConfig }) {
   const setTheme = (patch: Partial<ThemeConfig>) =>
     setConfig((prev) => ({ ...prev, theme: { ...prev.theme, ...patch } }));
 
-  const preset = THEME_PRESETS[config.theme.preset] ?? THEME_PRESETS.warm;
+  const preset = THEME_PRESETS[config.theme.preset] ?? THEME_PRESETS.amberglow;
   // The accent shown in the picker: a custom override, else the preset brand.
   const effectiveAccent = config.theme.accent || preset.light.brand;
   // The <input type="color"> needs a strict #rrggbb value at all times.
@@ -188,7 +188,7 @@ export function SettingsForm({ initial }: { initial: SiteConfig }) {
             onClick={() =>
               setConfig((prev) => ({
                 ...prev,
-                theme: { preset: "warm", accent: "", radius: THEME_PRESETS.warm.radius, headingFont: THEME_PRESETS.warm.headingFont },
+                theme: { preset: "amberglow", accent: "", radius: THEME_PRESETS.amberglow.radius, headingFont: THEME_PRESETS.amberglow.headingFont },
               }))
             }
             className="rounded-lg px-2.5 py-1 text-xs font-medium text-ink-muted transition-colors hover:bg-surface-soft hover:text-ink"

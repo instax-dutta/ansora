@@ -22,7 +22,7 @@ const CONFIG: SiteConfig = {
     github: "https://github.com/sam",
     linkedin: "",
   },
-  theme: { preset: "warm", accent: "", radius: "soft", headingFont: "serif" },
+  theme: { preset: "amberglow", accent: "", radius: "soft", headingFont: "serif" },
 };
 
 function meta(over: Partial<PostMeta> = {}): PostMeta {

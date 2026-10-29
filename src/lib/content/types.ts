@@ -233,17 +233,22 @@ const HEX_COLOR = /^#([0-9a-fA-F]{6}|[0-9a-fA-F]{3})$/;
 
 export const themeConfigSchema = z.object({
   preset: z.enum([
-    "warm",
-    "ocean",
-    "forest",
-    "midnight",
-    "opencode",
-    "opencode-dark",
-    "claude",
-    "claude-dark",
-    "minimax",
-    "minimax-dark",
-  ]).default("warm"),
+    "amberglow",
+    "abyss",
+    "moss",
+    "noir",
+    "neongrid",
+    "synthwave",
+    "raku",
+    "ember",
+    "aurora",
+    "galaxy",
+    "solstice",
+    "prism",
+    "velvet",
+    "monolith",
+    "horizon",
+  ]).default("amberglow"),
   // Strict hex so an arbitrary string can never ride into the injected CSS.
   // (resolveTheme guards this too — belt and braces.)
   accent: z
@@ -258,7 +263,7 @@ export const themeConfigSchema = z.object({
 export type ThemeConfig = z.infer<typeof themeConfigSchema>;
 
 export const DEFAULT_THEME_CONFIG: ThemeConfig = {
-  preset: "warm",
+  preset: "amberglow",
   accent: "",
   radius: "soft",
   headingFont: "serif",

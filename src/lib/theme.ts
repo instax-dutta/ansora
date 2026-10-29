@@ -1,399 +1,51 @@
 /**
  * Visual theme engine.
  *
- * Curated presets (warm / ocean / forest / midnight / opencode / claude /
- * minimax and their -dark variants), each with a
- * complete light and dark palette. Admins pick a preset from Settings →
- * Appearance and can
- * override the accent color, corner radius, and heading font. The resolved
- * values are emitted as CSS custom properties by `buildThemeCss()` and
- * injected into the root layout, so the whole site (public + admin) restyles
- * without a rebuild of the app code — only a content commit.
- *
- * The variables here are the "live tokens" consumed by Tailwind v4 via the
- * `@theme inline` block in globals.css (bg-paper, text-ink, border-line,
- * bg-brand, …). Overriding them at runtime re-skins every component.
+ * Curated presets (amberglow / abyss / moss / noir / neongrid / synthwave /
+ * raku / ember / aurora / galaxy / solstice / prism / velvet / monolith / horizon),
+ * each with a complete light and dark palette.
  */
 import type { ThemeConfig } from "@/lib/content/types";
 
 /* ------------------------------- Presets --------------------------------- */
 
 export type ThemePreset =
-  | "warm"
-  | "ocean"
-  | "forest"
-  | "midnight"
-  | "opencode"
-  | "opencode-dark"
-  | "claude"
-  | "claude-dark"
-  | "minimax"
-  | "minimax-dark";
+  | "amberglow" | "abyss" | "moss" | "noir" | "neongrid" | "synthwave"
+  | "raku" | "ember" | "aurora" | "galaxy" | "solstice" | "prism"
+  | "velvet" | "monolith" | "horizon";
 export type RadiusStyle = "sharp" | "soft" | "rounded";
 export type HeadingFont = "serif" | "sans";
 
 export interface Palette {
-  paper: string;
-  surface: string;
-  surfaceSoft: string;
-  ink: string;
-  inkMuted: string;
-  line: string;
-  lineStrong: string;
-  brand: string;
-  brandStrong: string;
-  brandSoft: string;
-  onBrand: string;
+  paper: string; surface: string; surfaceSoft: string; ink: string; inkMuted: string;
+  line: string; lineStrong: string; brand: string; brandStrong: string; brandSoft: string; onBrand: string;
 }
 
 export interface ThemePresetDef {
-  id: ThemePreset;
-  label: string;
-  tagline: string;
-  /** Recommended corner-radius scale — applied when the preset is selected. */
-  radius: RadiusStyle;
-  /** Recommended heading font — applied when the preset is selected. */
-  headingFont: HeadingFont;
-  light: Palette;
-  dark: Palette;
+  id: ThemePreset; label: string; tagline: string; radius: RadiusStyle; headingFont: HeadingFont;
+  light: Palette; dark: Palette;
 }
 
 export const THEME_PRESETS: Record<ThemePreset, ThemePresetDef> = {
-  warm: {
-    id: "warm",
-    label: "Warm",
-    tagline: "Cream paper, terracotta ink, serif charm.",
-    radius: "soft",
-    headingFont: "serif",
-    light: {
-      paper: "#faf6f0",
-      surface: "#ffffff",
-      surfaceSoft: "#f4ede2",
-      ink: "#2a241c",
-      inkMuted: "#6e6558",
-      line: "#e8dfd2",
-      lineStrong: "#d9cdbb",
-      brand: "#b04e14",
-      brandStrong: "#8f3c0d",
-      brandSoft: "#f6e7db",
-      onBrand: "#fffaf4",
-    },
-    dark: {
-      paper: "#16120e",
-      surface: "#201a14",
-      surfaceSoft: "#282117",
-      ink: "#ede6da",
-      inkMuted: "#a89e8e",
-      line: "#3a3126",
-      lineStrong: "#4a3e2f",
-      brand: "#e08151",
-      brandStrong: "#f0a06f",
-      brandSoft: "#3a2416",
-      onBrand: "#1c1109",
-    },
-  },
-  ocean: {
-    id: "ocean",
-    label: "Ocean",
-    tagline: "Cool slate blues with a bright teal accent.",
-    radius: "soft",
-    headingFont: "sans",
-    light: {
-      paper: "#f2f7fa",
-      surface: "#ffffff",
-      surfaceSoft: "#e5eef5",
-      ink: "#14232e",
-      inkMuted: "#5a6b79",
-      line: "#d7e3ec",
-      lineStrong: "#c0d2df",
-      brand: "#0f6d86",
-      brandStrong: "#0b5569",
-      brandSoft: "#d9eef4",
-      onBrand: "#f4fbfe",
-    },
-    dark: {
-      paper: "#0c1419",
-      surface: "#131e25",
-      surfaceSoft: "#1a2831",
-      ink: "#e2edf3",
-      inkMuted: "#8fa5b3",
-      line: "#243540",
-      lineStrong: "#314757",
-      brand: "#4fb3cd",
-      brandStrong: "#79c9de",
-      brandSoft: "#102c36",
-      onBrand: "#062029",
-    },
-  },
-  forest: {
-    id: "forest",
-    label: "Forest",
-    tagline: "Earthy greens on paper with a fresh eucalyptus accent.",
-    radius: "soft",
-    headingFont: "serif",
-    light: {
-      paper: "#f5f7f0",
-      surface: "#ffffff",
-      surfaceSoft: "#eaefe0",
-      ink: "#22281c",
-      inkMuted: "#69715c",
-      line: "#dfe4d2",
-      lineStrong: "#c8d1b8",
-      brand: "#4d7c37",
-      brandStrong: "#3c6329",
-      brandSoft: "#e4eeda",
-      onBrand: "#f8fbf2",
-    },
-    dark: {
-      paper: "#111510",
-      surface: "#181d15",
-      surfaceSoft: "#20271c",
-      ink: "#e6ead9",
-      inkMuted: "#9fa790",
-      line: "#2f3728",
-      lineStrong: "#3e4a36",
-      brand: "#8fbe6b",
-      brandStrong: "#a9d089",
-      brandSoft: "#22301a",
-      onBrand: "#0e1608",
-    },
-  },
-  midnight: {
-    id: "midnight",
-    label: "Midnight",
-    tagline: "Navy backgrounds, warm gold accent, moody and refined.",
-    radius: "soft",
-    headingFont: "serif",
-    light: {
-      paper: "#f5f3f0",
-      surface: "#ffffff",
-      surfaceSoft: "#ece8e2",
-      ink: "#1a1d2b",
-      inkMuted: "#6a6e7c",
-      line: "#e0dbd8",
-      lineStrong: "#cdc5c0",
-      brand: "#a67c00",
-      brandStrong: "#7d5e00",
-      brandSoft: "#f2e8c8",
-      onBrand: "#fffcf5",
-    },
-    dark: {
-      paper: "#0d0f17",
-      surface: "#151822",
-      surfaceSoft: "#1c1f2c",
-      ink: "#dfdfe8",
-      inkMuted: "#8b8f9e",
-      line: "#2a2e3d",
-      lineStrong: "#3a3f52",
-      brand: "#d4a017",
-      brandStrong: "#e0b832",
-      brandSoft: "#1c1e14",
-      onBrand: "#0c0a05",
-    },
-  },
-  opencode: {
-    id: "opencode",
-    label: "OpenCode",
-    tagline: "Terminal cream paper, near-black ink, mono precision.",
-    radius: "sharp",
-    headingFont: "sans",
-    light: {
-      paper: "#fdfcfc",
-      surface: "#f8f7f7",
-      surfaceSoft: "#f1eeee",
-      ink: "#201d1d",
-      inkMuted: "#646262",
-      line: "#e6e1e1",
-      lineStrong: "#646262",
-      brand: "#007aff",
-      brandStrong: "#0056b3",
-      brandSoft: "#d9eaff",
-      onBrand: "#ffffff",
-    },
-    dark: {
-      paper: "#201d1d",
-      surface: "#302c2c",
-      surfaceSoft: "#282424",
-      ink: "#fdfcfc",
-      inkMuted: "#9a9898",
-      line: "#3a3636",
-      lineStrong: "#646262",
-      brand: "#4f9bff",
-      brandStrong: "#007aff",
-      brandSoft: "#1c2533",
-      onBrand: "#ffffff",
-    },
-  },
-  "opencode-dark": {
-    id: "opencode-dark",
-    label: "OpenCode Dark",
-    tagline: "Near-black terminal canvas, blue syntax accent.",
-    radius: "sharp",
-    headingFont: "sans",
-    light: {
-      paper: "#201d1d",
-      surface: "#302c2c",
-      surfaceSoft: "#282424",
-      ink: "#fdfcfc",
-      inkMuted: "#9a9898",
-      line: "#3a3636",
-      lineStrong: "#646262",
-      brand: "#4f9bff",
-      brandStrong: "#007aff",
-      brandSoft: "#1c2533",
-      onBrand: "#ffffff",
-    },
-    dark: {
-      paper: "#15110f",
-      surface: "#241f1f",
-      surfaceSoft: "#1c1818",
-      ink: "#fdfcfc",
-      inkMuted: "#9a9898",
-      line: "#332f2f",
-      lineStrong: "#5a5555",
-      brand: "#5aa4ff",
-      brandStrong: "#007aff",
-      brandSoft: "#161d2b",
-      onBrand: "#ffffff",
-    },
-  },
-  claude: {
-    id: "claude",
-    label: "Claude",
-    tagline: "Warm cream canvas, coral accent, editorial serif.",
-    radius: "soft",
-    headingFont: "serif",
-    light: {
-      paper: "#faf9f5",
-      surface: "#efe9de",
-      surfaceSoft: "#f5f0e8",
-      ink: "#141413",
-      inkMuted: "#6c6a64",
-      line: "#e6dfd8",
-      lineStrong: "#d8d0c4",
-      brand: "#cc785c",
-      brandStrong: "#a9583e",
-      brandSoft: "#f6e3da",
-      onBrand: "#ffffff",
-    },
-    dark: {
-      paper: "#181715",
-      surface: "#252320",
-      surfaceSoft: "#1f1e1b",
-      ink: "#faf9f5",
-      inkMuted: "#a09d96",
-      line: "#2e2b27",
-      lineStrong: "#3a3631",
-      brand: "#e0917a",
-      brandStrong: "#cc785c",
-      brandSoft: "#2e201a",
-      onBrand: "#ffffff",
-    },
-  },
-  "claude-dark": {
-    id: "claude-dark",
-    label: "Claude Dark",
-    tagline: "Navy surface, warm coral, editorial serif.",
-    radius: "soft",
-    headingFont: "serif",
-    light: {
-      paper: "#181715",
-      surface: "#252320",
-      surfaceSoft: "#1f1e1b",
-      ink: "#faf9f5",
-      inkMuted: "#a09d96",
-      line: "#2e2b27",
-      lineStrong: "#3a3631",
-      brand: "#e0917a",
-      brandStrong: "#cc785c",
-      brandSoft: "#2e201a",
-      onBrand: "#ffffff",
-    },
-    dark: {
-      paper: "#121110",
-      surface: "#1d1b18",
-      surfaceSoft: "#191715",
-      ink: "#faf9f5",
-      inkMuted: "#a09d96",
-      line: "#272420",
-      lineStrong: "#342f2a",
-      brand: "#e89a83",
-      brandStrong: "#e0917a",
-      brandSoft: "#271a14",
-      onBrand: "#ffffff",
-    },
-  },
-  minimax: {
-    id: "minimax",
-    label: "MiniMax",
-    tagline: "Stark white canvas, black ink, vibrant coral.",
-    radius: "rounded",
-    headingFont: "sans",
-    light: {
-      paper: "#ffffff",
-      surface: "#f7f8fa",
-      surfaceSoft: "#f2f3f5",
-      ink: "#0a0a0a",
-      inkMuted: "#5f5f5f",
-      line: "#e5e7eb",
-      lineStrong: "#eaecf0",
-      brand: "#ff5530",
-      brandStrong: "#e0431f",
-      brandSoft: "#ffe5df",
-      onBrand: "#ffffff",
-    },
-    dark: {
-      paper: "#0a0a0a",
-      surface: "#181e25",
-      surfaceSoft: "#14181d",
-      ink: "#ffffff",
-      inkMuted: "#a8aab2",
-      line: "#2a2e33",
-      lineStrong: "#3a3f47",
-      brand: "#ff7a5c",
-      brandStrong: "#ff5530",
-      brandSoft: "#2a1814",
-      onBrand: "#ffffff",
-    },
-  },
-  "minimax-dark": {
-    id: "minimax-dark",
-    label: "MiniMax Dark",
-    tagline: "Near-black canvas, white ink, vibrant coral.",
-    radius: "rounded",
-    headingFont: "sans",
-    light: {
-      paper: "#0a0a0a",
-      surface: "#181e25",
-      surfaceSoft: "#14181d",
-      ink: "#ffffff",
-      inkMuted: "#a8aab2",
-      line: "#2a2e33",
-      lineStrong: "#3a3f47",
-      brand: "#ff7a5c",
-      brandStrong: "#ff5530",
-      brandSoft: "#2a1814",
-      onBrand: "#ffffff",
-    },
-    dark: {
-      paper: "#050505",
-      surface: "#12161b",
-      surfaceSoft: "#0e1115",
-      ink: "#ffffff",
-      inkMuted: "#a8aab2",
-      line: "#23272b",
-      lineStrong: "#33373f",
-      brand: "#ff8a70",
-      brandStrong: "#ff7a5c",
-      brandSoft: "#231712",
-      onBrand: "#ffffff",
-    },
-  },
+  amberglow: { id:"amberglow", label:"Amberglow", tagline:"Burnt honey, spiced parchment, old-world warmth.", radius:"soft", headingFont:"serif", light:{paper:"#f9f5ee",surface:"#ffffff",surfaceSoft:"#f3ebe0",ink:"#231c14",inkMuted:"#786b58",line:"#e6d9c7",lineStrong:"#d5c2a9",brand:"#c2410c",brandStrong:"#9a3412",brandSoft:"#fbe7d9",onBrand:"#fff7f0"}, dark:{paper:"#15100b",surface:"#201914",surfaceSoft:"#2a2018",ink:"#f0e7dc",inkMuted:"#b9a995",line:"#40362b",lineStrong:"#534638",brand:"#fb923c",brandStrong:"#fdba74",brandSoft:"#442813",onBrand:"#1a120b"} },
+  abyss: { id:"abyss", label:"Abyss", tagline:"Bioluminescent depths, electric cyan glow.", radius:"soft", headingFont:"sans", light:{paper:"#f0f8fb",surface:"#ffffff",surfaceSoft:"#e6f4f8",ink:"#0f1f26",inkMuted:"#4d6673",line:"#d3e6ee",lineStrong:"#b6d3e0",brand:"#0891b2",brandStrong:"#0e7490",brandSoft:"#cffafe",onBrand:"#f0fdff"}, dark:{paper:"#050d14",surface:"#0b1620",surfaceSoft:"#11212d",ink:"#e6f6fa",inkMuted:"#7fa3b5",line:"#1f3240",lineStrong:"#2a4355",brand:"#22d3ee",brandStrong:"#67e8f9",brandSoft:"#0f2f3a",onBrand:"#041418"} },
+  moss: { id:"moss", label:"Moss", tagline:"Damp woodland moss, chartreuse fireflies.", radius:"soft", headingFont:"serif", light:{paper:"#f6f8f3",surface:"#ffffff",surfaceSoft:"#eef4e6",ink:"#1c2416",inkMuted:"#5f6d4f",line:"#dce5d0",lineStrong:"#c7d4b5",brand:"#65a30d",brandStrong:"#4d7c0f",brandSoft:"#ecf7dc",onBrand:"#f7fdf0"}, dark:{paper:"#0f130a",surface:"#171d12",surfaceSoft:"#202a18",ink:"#e8f0df",inkMuted:"#a3b18a",line:"#2d3924",lineStrong:"#3b4930",brand:"#a3e635",brandStrong:"#bef264",brandSoft:"#253414",onBrand:"#131a0b"} },
+  noir: { id:"noir", label:"Noir", tagline:"Velvet noir, champagne gold, cinematic drama.", radius:"soft", headingFont:"serif", light:{paper:"#f7f6f4",surface:"#ffffff",surfaceSoft:"#f0eeea",ink:"#16141c",inkMuted:"#605d6b",line:"#e3e0dc",lineStrong:"#d1ccc7",brand:"#b8860b",brandStrong:"#8b6508",brandSoft:"#f5ecd0",onBrand:"#fffaf0"}, dark:{paper:"#08070c",surface:"#121019",surfaceSoft:"#191725",ink:"#ece9f3",inkMuted:"#9b95b0",line:"#292535",lineStrong:"#383346",brand:"#f59e0b",brandStrong:"#fbbf24",brandSoft:"#2a2210",onBrand:"#161008"} },
+  neongrid: { id:"neongrid", label:"NeonGrid", tagline:"Vaporwave terminals, hot magenta meets cyan.", radius:"sharp", headingFont:"sans", light:{paper:"#fbf8ff",surface:"#f6f3ff",surfaceSoft:"#f1ebff",ink:"#1a1528",inkMuted:"#5e5478",line:"#e5dcf9",lineStrong:"#d4c6f5",brand:"#a855f7",brandStrong:"#9333ea",brandSoft:"#f3e8ff",onBrand:"#fbf7ff"}, dark:{paper:"#0a0614",surface:"#151022",surfaceSoft:"#1d152b",ink:"#f3edff",inkMuted:"#b8a7e3",line:"#32274a",lineStrong:"#463460",brand:"#c084fc",brandStrong:"#d8b4fe",brandSoft:"#2a1a42",onBrand:"#120b1f"} },
+  synthwave: { id:"synthwave", label:"Synthwave", tagline:"Midnight grid, pink-cyan neon haze.", radius:"sharp", headingFont:"sans", light:{paper:"#130b1c",surface:"#1f152b",surfaceSoft:"#251a34",ink:"#f7f0ff",inkMuted:"#c4b5fd",line:"#392a52",lineStrong:"#4f3a6b",brand:"#f472b6",brandStrong:"#ec4899",brandSoft:"#3a1f35",onBrand:"#1f1027"}, dark:{paper:"#080510",surface:"#120b1f",surfaceSoft:"#160f25",ink:"#f7f0ff",inkMuted:"#c4b5fd",line:"#2d2240",lineStrong:"#3f2f5c",brand:"#f9a8d4",brandStrong:"#f472b6",brandSoft:"#2b172a",onBrand:"#1a0f1f"} },
+  raku: { id:"raku", label:"Raku", tagline:"Japanese tea ceremony, blush clay, lacquer warmth.", radius:"soft", headingFont:"serif", light:{paper:"#f9f6f2",surface:"#ffffff",surfaceSoft:"#f5f0e9",ink:"#1f1913",inkMuted:"#6b5d4f",line:"#e7ded2",lineStrong:"#d6c7b6",brand:"#b45309",brandStrong:"#92400e",brandSoft:"#f7e6d3",onBrand:"#fff8f0"}, dark:{paper:"#16110b",surface:"#211a13",surfaceSoft:"#2a2017",ink:"#f0e6d8",inkMuted:"#b9a389",line:"#3f3328",lineStrong:"#524336",brand:"#f59e0b",brandStrong:"#fbbf24",brandSoft:"#382a16",onBrand:"#1a140b"} },
+  ember: { id:"ember", label:"Ember", tagline:"Smoldering mahogany, molten copper glow.", radius:"soft", headingFont:"serif", light:{paper:"#18110b",surface:"#231a13",surfaceSoft:"#2b2016",ink:"#f5e6d3",inkMuted:"#d4b896",line:"#3d2f23",lineStrong:"#513d2d",brand:"#fb923c",brandStrong:"#fdba74",brandSoft:"#3a2413",onBrand:"#1a1109"}, dark:{paper:"#120d09",surface:"#1a1510",surfaceSoft:"#211a14",ink:"#f5e6d3",inkMuted:"#d4b896",line:"#332820",lineStrong:"#443429",brand:"#fdba74",brandStrong:"#fed7aa",brandSoft:"#342315",onBrand:"#1a120b"} },
+  aurora: { id:"aurora", label:"Aurora", tagline:"Arctic glass, spectral pink-violet aurora.", radius:"rounded", headingFont:"sans", light:{paper:"#f8f9ff",surface:"#ffffff",surfaceSoft:"#f1f4ff",ink:"#0f1026",inkMuted:"#565b7a",line:"#e3e6ff",lineStrong:"#cfd2ff",brand:"#6366f1",brandStrong:"#4f46e5",brandSoft:"#eef2ff",onBrand:"#f8f9ff"}, dark:{paper:"#060814",surface:"#101225",surfaceSoft:"#171a2e",ink:"#f0f2ff",inkMuted:"#a5a9d6",line:"#262a4a",lineStrong:"#353a63",brand:"#818cf8",brandStrong:"#a5b4fc",brandSoft:"#1e1f3d",onBrand:"#0f1026"} },
+  galaxy: { id:"galaxy", label:"Galaxy", tagline:"Cosmic void, holographic magenta-cyan shimmer.", radius:"rounded", headingFont:"sans", light:{paper:"#070510",surface:"#110d1f",surfaceSoft:"#170f29",ink:"#f3f0ff",inkMuted:"#b9b0e6",line:"#2a1f42",lineStrong:"#392b59",brand:"#a78bfa",brandStrong:"#c4b5fd",brandSoft:"#261b3f",onBrand:"#140f25"}, dark:{paper:"#040308",surface:"#0d091a",surfaceSoft:"#130e21",ink:"#f3f0ff",inkMuted:"#b9b0e6",line:"#201836",lineStrong:"#2d2247",brand:"#c4b5fd",brandStrong:"#ddd6fe",brandSoft:"#211a3a",onBrand:"#150f28"} },
+  solstice: { id:"solstice", label:"Solstice", tagline:"Burnt orange sun, desert cream.", radius:"soft", headingFont:"serif", light:{paper:"#fdf7f0",surface:"#ffffff",surfaceSoft:"#f7efe5",ink:"#2a1a0f",inkMuted:"#7c5c3e",line:"#ecdcc9",lineStrong:"#dec5a6",brand:"#ea580c",brandStrong:"#c2410c",brandSoft:"#ffe4d6",onBrand:"#fff7f0"}, dark:{paper:"#140b06",surface:"#20130a",surfaceSoft:"#2a1810",ink:"#f7ebe0",inkMuted:"#d4b79a",line:"#3f2a1d",lineStrong:"#553628",brand:"#fb923c",brandStrong:"#fdba74",brandSoft:"#3a2214",onBrand:"#1a120b"} },
+  prism: { id:"prism", label:"Prism", tagline:"Iridescent spectrum, holographic glass glow.", radius:"rounded", headingFont:"sans", light:{paper:"#f9f8ff",surface:"#ffffff",surfaceSoft:"#f4f1ff",ink:"#15122b",inkMuted:"#5b557a",line:"#e6e0ff",lineStrong:"#d6ceff",brand:"#8b5cf6",brandStrong:"#7c3aed",brandSoft:"#f3e8ff",onBrand:"#f9f8ff"}, dark:{paper:"#0a0814",surface:"#141029",surfaceSoft:"#1b1536",ink:"#f3f0ff",inkMuted:"#b8b0e8",line:"#2d254a",lineStrong:"#3c3263",brand:"#a78bfa",brandStrong:"#c4b5fd",brandSoft:"#251d42",onBrand:"#110d25"} },
+  velvet: { id:"velvet", label:"Velvet", tagline:"Deep amethyst velvet, rose gold luminescence.", radius:"soft", headingFont:"serif", light:{paper:"#f9f6fa",surface:"#ffffff",surfaceSoft:"#f5eff7",ink:"#1f1626",inkMuted:"#6b5a75",line:"#e8dff0",lineStrong:"#d7c6e3",brand:"#a855f7",brandStrong:"#9333ea",brandSoft:"#f3e8ff",onBrand:"#fbf7ff"}, dark:{paper:"#0f0a14",surface:"#1a1223",surfaceSoft:"#23182d",ink:"#f3ecfa",inkMuted:"#c4b3d6",line:"#34283f",lineStrong:"#453552",brand:"#d8b4fe",brandStrong:"#e9d5ff",brandSoft:"#2d1f3a",onBrand:"#1a1026"} },
+  monolith: { id:"monolith", label:"Monolith", tagline:"Brutalist concrete, stark contrast, electric cyan.", radius:"sharp", headingFont:"sans", light:{paper:"#f7f7f7",surface:"#ffffff",surfaceSoft:"#f0f0f0",ink:"#0a0a0a",inkMuted:"#4a4a4a",line:"#dcdcdc",lineStrong:"#bfbfbf",brand:"#06b6d4",brandStrong:"#0891b2",brandSoft:"#e0f7fa",onBrand:"#f0fdff"}, dark:{paper:"#050505",surface:"#0f0f0f",surfaceSoft:"#151515",ink:"#f5f5f5",inkMuted:"#a3a3a3",line:"#262626",lineStrong:"#3a3a3a",brand:"#22d3ee",brandStrong:"#67e8f9",brandSoft:"#0f2f36",onBrand:"#041418"} },
+  horizon: { id:"horizon", label:"Horizon", tagline:"Twilight gradient sky, peach rose, indigo night.", radius:"rounded", headingFont:"serif", light:{paper:"#f9f7fc",surface:"#ffffff",surfaceSoft:"#f4f0fa",ink:"#1a1525",inkMuted:"#665a7a",line:"#e7e0f3",lineStrong:"#d5cbe6",brand:"#f59e0b",brandStrong:"#d97706",brandSoft:"#fef3c7",onBrand:"#1a120b"}, dark:{paper:"#0b0914",surface:"#151022",surfaceSoft:"#1d162b",ink:"#f3f0fa",inkMuted:"#b8a7d6",line:"#2f2542",lineStrong:"#3f3157",brand:"#fbbf24",brandStrong:"#f59e0b",brandSoft:"#2a2310",onBrand:"#1a140b"} },
 };
 
 /* --------------------------- Radius & fonts ------------------------------- */
 
-/** Corner-radius scales mapped onto Tailwind v4's `--radius-*` tokens. */
 export const RADIUS_SCALES: Record<
   RadiusStyle,
   Record<string, string>
@@ -434,7 +86,6 @@ export const HEADING_FONT_LABELS: Record<HeadingFont, string> = {
 
 /* ------------------------ Preset accent swatches -------------------------- */
 
-/** Curated accent colors shown as quick-pick chips in the Appearance form. */
 export interface AccentSwatch {
   label: string;
   hex: string;
@@ -465,7 +116,6 @@ function rgbToHex({ r, g, b }: { r: number; g: number; b: number }): string {
   return `#${to(r)}${to(g)}${to(b)}`;
 }
 
-/** Linear interpolation between two hex colors. weight 0 → a, 1 → b. */
 export function mix(a: string, b: string, weight: number): string {
   const ca = hexToRgb(a);
   const cb = hexToRgb(b);
@@ -477,7 +127,6 @@ export function mix(a: string, b: string, weight: number): string {
   });
 }
 
-/** WCAG relative luminance (0–1). */
 export function luminance(hex: string): number {
   const rgb = hexToRgb(hex);
   if (!rgb) return 0;
@@ -488,7 +137,6 @@ export function luminance(hex: string): number {
   return 0.2126 * r + 0.7152 * g + 0.0722 * b;
 }
 
-/** WCAG contrast ratio between two colors (1–21). */
 export function contrast(a: string, b: string): number {
   const la = luminance(a);
   const lb = luminance(b);
@@ -499,13 +147,6 @@ export function contrast(a: string, b: string): number {
 const ON_BRAND_LIGHT = "#16130e";
 const ON_BRAND_DARK = "#fffaf4";
 
-/**
- * Picks a readable foreground (--on-brand) for a given background: the one of
- * near-black / near-white with the higher WCAG contrast. Arbitrary user
- * accents can land anywhere on the lightness scale, so the max-contrast
- * choice keeps small text (buttons, chips, badges) as close to AA as a
- * two-color system allows.
- */
 export function textOn(hex: string): string {
   return contrast(ON_BRAND_DARK, hex) >= contrast(ON_BRAND_LIGHT, hex)
     ? ON_BRAND_DARK
@@ -514,12 +155,8 @@ export function textOn(hex: string): string {
 
 /* ----------------------------- Resolution --------------------------------- */
 
-/**
- * Resolve a ThemeConfig into concrete light + dark palettes, applying the
- * custom accent override (deriving the strong/soft/on-brand variants).
- */
 export function resolveTheme(theme: ThemeConfig): { light: Palette; dark: Palette } {
-  const preset = THEME_PRESETS[theme.preset] ?? THEME_PRESETS.warm;
+  const preset = THEME_PRESETS[theme.preset] ?? THEME_PRESETS.amberglow;
   const accent = (theme.accent ?? "").trim();
   if (!accent || !hexToRgb(accent)) {
     return { light: preset.light, dark: preset.dark };
@@ -562,11 +199,6 @@ function cssVars(entries: Record<string, string>): string {
     .join(";");
 }
 
-/**
- * Emit the full CSS custom-property block for a theme. Selectors use
- * `html:root` / `html.dark` so they beat globals.css's `:root` / `.dark`
- * regardless of style-sheet order.
- */
 export function buildThemeCss(theme: ThemeConfig): string {
   const { light, dark } = resolveTheme(theme);
   const radius = RADIUS_SCALES[theme.radius] ?? RADIUS_SCALES.soft;

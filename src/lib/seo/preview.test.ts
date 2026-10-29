@@ -13,7 +13,7 @@ const CONFIG: SiteConfig = {
   authorRole: "",
   defaultOgImage: "",
   social: { twitter: "", github: "", linkedin: "" },
-  theme: { preset: "warm", accent: "", radius: "soft", headingFont: "serif" },
+  theme: { preset: "amberglow", accent: "", radius: "soft", headingFont: "serif" },
 };
 
 describe("truncate", () => {

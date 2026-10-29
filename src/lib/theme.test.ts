@@ -47,13 +47,13 @@ describe("presets", () => {
       "claude",
       "claude-dark",
       "forest",
-      "midnight",
+      "noir",
       "minimax",
       "minimax-dark",
-      "ocean",
+      "abyss",
       "opencode",
       "opencode-dark",
-      "warm",
+      "amberglow",
     ]);
     for (const id of ids) {
       const preset = THEME_PRESETS[id as keyof typeof THEME_PRESETS];
@@ -69,9 +69,9 @@ describe("presets", () => {
 
 describe("resolveTheme", () => {
   it("returns the preset palettes when no accent override is set", () => {
-    const { light, dark } = resolveTheme({ ...DEFAULT_THEME_CONFIG, preset: "ocean" });
-    expect(light.brand).toBe(THEME_PRESETS.ocean.light.brand);
-    expect(dark.brand).toBe(THEME_PRESETS.ocean.dark.brand);
+    const { light, dark } = resolveTheme({ ...DEFAULT_THEME_CONFIG, preset: "abyss" });
+    expect(light.brand).toBe(THEME_PRESETS.abyss.light.brand);
+    expect(dark.brand).toBe(THEME_PRESETS.abyss.dark.brand);
   });
 
   it("applies a custom accent and derives its variants", () => {
@@ -86,19 +86,19 @@ describe("resolveTheme", () => {
 
   it("ignores malformed accents", () => {
     const { light } = resolveTheme({ ...DEFAULT_THEME_CONFIG, accent: "hotpink" });
-    expect(light.brand).toBe(THEME_PRESETS.warm.light.brand);
+    expect(light.brand).toBe(THEME_PRESETS.amberglow.light.brand);
   });
 
   it("resolves the midnight preset without accent override", () => {
-    const { light, dark } = resolveTheme({ ...DEFAULT_THEME_CONFIG, preset: "midnight" });
-    expect(light.brand).toBe(THEME_PRESETS.midnight.light.brand);
-    expect(dark.brand).toBe(THEME_PRESETS.midnight.dark.brand);
-    expect(dark.paper).toBe("#0d0f17");
+    const { light, dark } = resolveTheme({ ...DEFAULT_THEME_CONFIG, preset: "noir" });
+    expect(light.brand).toBe(THEME_PRESETS.noir.light.brand);
+    expect(dark.brand).toBe(THEME_PRESETS.noir.dark.brand);
+    expect(dark.paper).toBe("#08070c");
   });
 
   it("falls back to warm for unknown presets", () => {
     const { light } = resolveTheme({ ...DEFAULT_THEME_CONFIG, preset: "neon" as never });
-    expect(light.paper).toBe(THEME_PRESETS.warm.light.paper);
+    expect(light.brand).toBe(THEME_PRESETS.amberglow.light.brand);
   });
 });
 
@@ -107,9 +107,9 @@ describe("buildThemeCss", () => {
     const css = buildThemeCss(DEFAULT_THEME_CONFIG);
     expect(css).toContain("html:root{");
     expect(css).toContain("html.dark{");
-    expect(css).toContain("--paper:" + THEME_PRESETS.warm.light.paper);
-    expect(css).toContain("--brand:" + THEME_PRESETS.warm.light.brand);
-    expect(css).toContain("--paper:" + THEME_PRESETS.warm.dark.paper);
+    expect(css).toContain("--paper:" + THEME_PRESETS.amberglow.light.paper);
+    expect(css).toContain("--brand:" + THEME_PRESETS.amberglow.light.brand);
+    expect(css).toContain("--paper:" + THEME_PRESETS.amberglow.dark.paper);
     expect(css).toContain("color-scheme:light");
     expect(css).toContain("color-scheme:dark");
   });
