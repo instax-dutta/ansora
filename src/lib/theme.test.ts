@@ -44,16 +44,21 @@ describe("presets", () => {
   it("defines all four presets with full light+dark palettes", () => {
     const ids = Object.keys(THEME_PRESETS);
     expect(ids.sort()).toEqual([
-      "claude",
-      "claude-dark",
-      "forest",
-      "noir",
-      "minimax",
-      "minimax-dark",
       "abyss",
-      "opencode",
-      "opencode-dark",
       "amberglow",
+      "aurora",
+      "ember",
+      "galaxy",
+      "horizon",
+      "monolith",
+      "moss",
+      "neongrid",
+      "noir",
+      "prism",
+      "raku",
+      "solstice",
+      "synthwave",
+      "velvet",
     ]);
     for (const id of ids) {
       const preset = THEME_PRESETS[id as keyof typeof THEME_PRESETS];
