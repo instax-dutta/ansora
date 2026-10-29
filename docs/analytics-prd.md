@@ -679,7 +679,7 @@ Build **Ansora Analytics** as an optional, independent admin section, and make i
 ## Repository references reviewed
 
 - Project overview and feature contracts: https://github.com/instax-dutta/ansora/blob/main/README.md
-- Architecture contract and no-database constraint: https://github.com/instax-dutta/ansora/blob/main/AGENTS.md and https://github.com/instax-dutta/ansora/blob/main/foundation.md
+- Architecture contract and no-database constraint: https://github.com/instax-dutta/ansora/blob/main/AGENTS.md and https://github.com/instax-dutta/ansora/blob/main/docs/foundation.md
 - Content adapter interface: https://github.com/instax-dutta/ansora/blob/main/src/lib/content/index.ts
 - Content model and validation: https://github.com/instax-dutta/ansora/blob/main/src/lib/content/types.ts
 - Admin dashboard: https://github.com/instax-dutta/ansora/blob/main/src/app/admin/%28dashboard%29/page.tsx

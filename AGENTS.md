@@ -80,7 +80,7 @@ Default section order:
 - **Components use theme tokens, not hex colors.** Palette hex lives only in `src/lib/theme.ts` and the `globals.css` fallbacks.
 - **SEO/AEO surface is non-negotiable** — canonical URLs, metadata, JSON-LD entity graph, RSS/JSON Feed/sitemap/robots/llms.txt/llms-full.txt, markdown content negotiation stay correct.
 - **Security baseline (audited 2026-08):** slugs are validated by `isSafeSlug()` inside both content adapters before touching any path; every mutating admin API route runs `isCrossOrigin()`; site-wide security headers live only in `next.config.ts` (the analytics CSP allowlist is compiled there from `ANALYTICS_SCRIPT_ORIGIN` and is therefore a **build-time** input — do not add a second, runtime CSP source); JSON-LD embeds through `serializeJsonLd()`/`components/JsonLd.tsx`. Do not bypass any of these.
-- **Deep reference:** `foundation.md` is the canonical codebase knowledge doc — read it before major work.
+- **Deep reference:** `docs/foundation.md` is the canonical codebase knowledge doc — read it before major work.
 
 ## Child DOX Index updates
 - `src/lib/analytics/AGENTS.md` owns the analytics contract (provider adapter, query bounds, path→post mapping, tracker privacy, opportunities). Parent indexes: root (this file), `src/AGENTS.md`, `src/lib/AGENTS.md`, `src/app/AGENTS.md`, `src/components/AGENTS.md`, `src/lib/content/AGENTS.md`.
@@ -92,4 +92,6 @@ Default section order:
 | `scripts/AGENTS.md` | hash-password, github-repo, verify-serverless | CLI helpers + harness |
 | `src/AGENTS.md` | the Next.js app source | app-wide rules + routes/components/lib index |
 
-Root-owned files: `README.md`, `foundation.md`, `LICENSE`, `Dockerfile`, `docker-compose.yml`, `render.yaml`, `package.json`, `next.config.ts`, `.env.example`, `vitest.config.mts`, `tsconfig.json`, `eslint.config.mjs`, `postcss.config.mjs`, `.gitignore`, `.dockerignore`.
+Root-owned files: `README.md`, `LICENSE`, `Dockerfile`, `docker-compose.yml`, `render.yaml`, `package.json`, `next.config.ts`, `.env.example`, `vitest.config.mts`, `tsconfig.json`, `eslint.config.mjs`, `postcss.config.mjs`, `.gitignore`, `.dockerignore`.
+
+Repository documentation lives in `docs/`: `foundation.md` (canonical deep reference), `analytics-prd.md` (design record for the analytics feature), `design/` (theme voice briefs + comparison renders), `netlify-multi-blog-setup.md`.
