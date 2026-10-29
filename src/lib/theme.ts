@@ -1,20 +1,53 @@
 /**
- * Visual theme engine.
+ * Visual theme engine — "theme = voice".
  *
- * Curated presets (amberglow / abyss / moss / noir / neongrid / synthwave /
- * raku / ember / aurora / galaxy / solstice / prism / velvet / monolith / horizon),
- * each with a complete light and dark palette.
+ * A curated preset is a *typographic identity*, not a color chip: besides a
+ * light+dark palette it carries a face (density, body voice, display voice,
+ * chrome, prose furniture, structural rules) that the layout consumes through
+ * CSS variables, so switching preset changes the whole material of the site.
+ *
+ * Modes: a preset is either dual (light/dark toggle) or single-mode
+ * (dark-only / light-only). A single-mode preset stores its one palette in
+ * BOTH `light` and `dark` slots so the engine stays uniform, and the light/dark
+ * toggle is hidden for it (Header checks `mode`).
  */
 import type { ThemeConfig } from "@/lib/content/types";
 
 /* ------------------------------- Presets --------------------------------- */
 
 export type ThemePreset =
-  | "amberglow" | "abyss" | "moss" | "noir" | "neongrid" | "synthwave"
-  | "raku" | "ember" | "aurora" | "galaxy" | "solstice" | "prism"
-  | "velvet" | "monolith" | "horizon";
+  | "inkline" | "broadsheet" | "folio" | "atelier"
+  | "ledger" | "nocturne" | "console" | "lantern";
 export type RadiusStyle = "sharp" | "soft" | "rounded";
 export type HeadingFont = "serif" | "sans";
+
+export type ThemeMode = "dual" | "dark" | "light";
+
+/**
+ * The typographic face of a preset — what makes a theme a material instead of
+ * a palette. Every value lands in a CSS custom property; the layout, prose and
+ * chrome consume them (see globals.css).
+ */
+export interface ThemeFace {
+  /** Tailwind spacing unit — the density dial for the whole site. */
+  density: string;
+  bodyFont: "sans" | "serif";
+  bodySize: string;
+  leading: string;
+  /** Body letter-spacing. Serif voices mostly stay "normal". */
+  tracking: string;
+  displayTracking: string;
+  displayWeight: number;
+  /** Labels (dates, bylines, tags, footer) — mono or sans. */
+  chrome: "sans" | "mono";
+  /** First paragraph gets a drop cap. */
+  dropcap: boolean;
+  /** Structural rule (header / footer / cards). */
+  strokeWidth?: string;
+  strokeStyle?: "solid" | "dashed";
+  /** Rare: replaces the flat paper (gradient atmospheres). */
+  paperBg?: string;
+}
 
 export interface Palette {
   paper: string; surface: string; surfaceSoft: string; ink: string; inkMuted: string;
@@ -22,26 +55,92 @@ export interface Palette {
 }
 
 export interface ThemePresetDef {
-  id: ThemePreset; label: string; tagline: string; radius: RadiusStyle; headingFont: HeadingFont;
-  light: Palette; dark: Palette;
+  id: ThemePreset; label: string; tagline: string; mode: ThemeMode;
+  radius: RadiusStyle; headingFont: HeadingFont;
+  light: Palette; dark: Palette; face: ThemeFace;
 }
 
 export const THEME_PRESETS: Record<ThemePreset, ThemePresetDef> = {
-  amberglow: { id:"amberglow", label:"Amberglow", tagline:"Burnt honey, spiced parchment, old-world warmth.", radius:"soft", headingFont:"serif", light:{paper:"#f9f5ee",surface:"#ffffff",surfaceSoft:"#f3ebe0",ink:"#231c14",inkMuted:"#786b58",line:"#e6d9c7",lineStrong:"#d5c2a9",brand:"#c2410c",brandStrong:"#9a3412",brandSoft:"#fbe7d9",onBrand:"#fff7f0"}, dark:{paper:"#15100b",surface:"#201914",surfaceSoft:"#2a2018",ink:"#f0e7dc",inkMuted:"#b9a995",line:"#40362b",lineStrong:"#534638",brand:"#fb923c",brandStrong:"#fdba74",brandSoft:"#442813",onBrand:"#1a120b"} },
-  abyss: { id:"abyss", label:"Abyss", tagline:"Bioluminescent depths, electric cyan glow.", radius:"soft", headingFont:"sans", light:{paper:"#f0f8fb",surface:"#ffffff",surfaceSoft:"#e6f4f8",ink:"#0f1f26",inkMuted:"#4d6673",line:"#d3e6ee",lineStrong:"#b6d3e0",brand:"#0891b2",brandStrong:"#0e7490",brandSoft:"#cffafe",onBrand:"#f0fdff"}, dark:{paper:"#050d14",surface:"#0b1620",surfaceSoft:"#11212d",ink:"#e6f6fa",inkMuted:"#7fa3b5",line:"#1f3240",lineStrong:"#2a4355",brand:"#22d3ee",brandStrong:"#67e8f9",brandSoft:"#0f2f3a",onBrand:"#041418"} },
-  moss: { id:"moss", label:"Moss", tagline:"Damp woodland moss, chartreuse fireflies.", radius:"soft", headingFont:"serif", light:{paper:"#f6f8f3",surface:"#ffffff",surfaceSoft:"#eef4e6",ink:"#1c2416",inkMuted:"#5f6d4f",line:"#dce5d0",lineStrong:"#c7d4b5",brand:"#65a30d",brandStrong:"#4d7c0f",brandSoft:"#ecf7dc",onBrand:"#f7fdf0"}, dark:{paper:"#0f130a",surface:"#171d12",surfaceSoft:"#202a18",ink:"#e8f0df",inkMuted:"#a3b18a",line:"#2d3924",lineStrong:"#3b4930",brand:"#a3e635",brandStrong:"#bef264",brandSoft:"#253414",onBrand:"#131a0b"} },
-  noir: { id:"noir", label:"Noir", tagline:"Velvet noir, champagne gold, cinematic drama.", radius:"soft", headingFont:"serif", light:{paper:"#f7f6f4",surface:"#ffffff",surfaceSoft:"#f0eeea",ink:"#16141c",inkMuted:"#605d6b",line:"#e3e0dc",lineStrong:"#d1ccc7",brand:"#b8860b",brandStrong:"#8b6508",brandSoft:"#f5ecd0",onBrand:"#fffaf0"}, dark:{paper:"#08070c",surface:"#121019",surfaceSoft:"#191725",ink:"#ece9f3",inkMuted:"#9b95b0",line:"#292535",lineStrong:"#383346",brand:"#f59e0b",brandStrong:"#fbbf24",brandSoft:"#2a2210",onBrand:"#161008"} },
-  neongrid: { id:"neongrid", label:"NeonGrid", tagline:"Vaporwave terminals, hot magenta meets cyan.", radius:"sharp", headingFont:"sans", light:{paper:"#fbf8ff",surface:"#f6f3ff",surfaceSoft:"#f1ebff",ink:"#1a1528",inkMuted:"#5e5478",line:"#e5dcf9",lineStrong:"#d4c6f5",brand:"#a855f7",brandStrong:"#9333ea",brandSoft:"#f3e8ff",onBrand:"#fbf7ff"}, dark:{paper:"#0a0614",surface:"#151022",surfaceSoft:"#1d152b",ink:"#f3edff",inkMuted:"#b8a7e3",line:"#32274a",lineStrong:"#463460",brand:"#c084fc",brandStrong:"#d8b4fe",brandSoft:"#2a1a42",onBrand:"#120b1f"} },
-  synthwave: { id:"synthwave", label:"Synthwave", tagline:"Midnight grid, pink-cyan neon haze.", radius:"sharp", headingFont:"sans", light:{paper:"#130b1c",surface:"#1f152b",surfaceSoft:"#251a34",ink:"#f7f0ff",inkMuted:"#c4b5fd",line:"#392a52",lineStrong:"#4f3a6b",brand:"#f472b6",brandStrong:"#ec4899",brandSoft:"#3a1f35",onBrand:"#1f1027"}, dark:{paper:"#080510",surface:"#120b1f",surfaceSoft:"#160f25",ink:"#f7f0ff",inkMuted:"#c4b5fd",line:"#2d2240",lineStrong:"#3f2f5c",brand:"#f9a8d4",brandStrong:"#f472b6",brandSoft:"#2b172a",onBrand:"#1a0f1f"} },
-  raku: { id:"raku", label:"Raku", tagline:"Japanese tea ceremony, blush clay, lacquer warmth.", radius:"soft", headingFont:"serif", light:{paper:"#f9f6f2",surface:"#ffffff",surfaceSoft:"#f5f0e9",ink:"#1f1913",inkMuted:"#6b5d4f",line:"#e7ded2",lineStrong:"#d6c7b6",brand:"#b45309",brandStrong:"#92400e",brandSoft:"#f7e6d3",onBrand:"#fff8f0"}, dark:{paper:"#16110b",surface:"#211a13",surfaceSoft:"#2a2017",ink:"#f0e6d8",inkMuted:"#b9a389",line:"#3f3328",lineStrong:"#524336",brand:"#f59e0b",brandStrong:"#fbbf24",brandSoft:"#382a16",onBrand:"#1a140b"} },
-  ember: { id:"ember", label:"Ember", tagline:"Smoldering mahogany, molten copper glow.", radius:"soft", headingFont:"serif", light:{paper:"#18110b",surface:"#231a13",surfaceSoft:"#2b2016",ink:"#f5e6d3",inkMuted:"#d4b896",line:"#3d2f23",lineStrong:"#513d2d",brand:"#fb923c",brandStrong:"#fdba74",brandSoft:"#3a2413",onBrand:"#1a1109"}, dark:{paper:"#120d09",surface:"#1a1510",surfaceSoft:"#211a14",ink:"#f5e6d3",inkMuted:"#d4b896",line:"#332820",lineStrong:"#443429",brand:"#fdba74",brandStrong:"#fed7aa",brandSoft:"#342315",onBrand:"#1a120b"} },
-  aurora: { id:"aurora", label:"Aurora", tagline:"Arctic glass, spectral pink-violet aurora.", radius:"rounded", headingFont:"sans", light:{paper:"#f8f9ff",surface:"#ffffff",surfaceSoft:"#f1f4ff",ink:"#0f1026",inkMuted:"#565b7a",line:"#e3e6ff",lineStrong:"#cfd2ff",brand:"#6366f1",brandStrong:"#4f46e5",brandSoft:"#eef2ff",onBrand:"#f8f9ff"}, dark:{paper:"#060814",surface:"#101225",surfaceSoft:"#171a2e",ink:"#f0f2ff",inkMuted:"#a5a9d6",line:"#262a4a",lineStrong:"#353a63",brand:"#818cf8",brandStrong:"#a5b4fc",brandSoft:"#1e1f3d",onBrand:"#0f1026"} },
-  galaxy: { id:"galaxy", label:"Galaxy", tagline:"Cosmic void, holographic magenta-cyan shimmer.", radius:"rounded", headingFont:"sans", light:{paper:"#070510",surface:"#110d1f",surfaceSoft:"#170f29",ink:"#f3f0ff",inkMuted:"#b9b0e6",line:"#2a1f42",lineStrong:"#392b59",brand:"#a78bfa",brandStrong:"#c4b5fd",brandSoft:"#261b3f",onBrand:"#140f25"}, dark:{paper:"#040308",surface:"#0d091a",surfaceSoft:"#130e21",ink:"#f3f0ff",inkMuted:"#b9b0e6",line:"#201836",lineStrong:"#2d2247",brand:"#c4b5fd",brandStrong:"#ddd6fe",brandSoft:"#211a3a",onBrand:"#150f28"} },
-  solstice: { id:"solstice", label:"Solstice", tagline:"Burnt orange sun, desert cream.", radius:"soft", headingFont:"serif", light:{paper:"#fdf7f0",surface:"#ffffff",surfaceSoft:"#f7efe5",ink:"#2a1a0f",inkMuted:"#7c5c3e",line:"#ecdcc9",lineStrong:"#dec5a6",brand:"#ea580c",brandStrong:"#c2410c",brandSoft:"#ffe4d6",onBrand:"#fff7f0"}, dark:{paper:"#140b06",surface:"#20130a",surfaceSoft:"#2a1810",ink:"#f7ebe0",inkMuted:"#d4b79a",line:"#3f2a1d",lineStrong:"#553628",brand:"#fb923c",brandStrong:"#fdba74",brandSoft:"#3a2214",onBrand:"#1a120b"} },
-  prism: { id:"prism", label:"Prism", tagline:"Iridescent spectrum, holographic glass glow.", radius:"rounded", headingFont:"sans", light:{paper:"#f9f8ff",surface:"#ffffff",surfaceSoft:"#f4f1ff",ink:"#15122b",inkMuted:"#5b557a",line:"#e6e0ff",lineStrong:"#d6ceff",brand:"#8b5cf6",brandStrong:"#7c3aed",brandSoft:"#f3e8ff",onBrand:"#f9f8ff"}, dark:{paper:"#0a0814",surface:"#141029",surfaceSoft:"#1b1536",ink:"#f3f0ff",inkMuted:"#b8b0e8",line:"#2d254a",lineStrong:"#3c3263",brand:"#a78bfa",brandStrong:"#c4b5fd",brandSoft:"#251d42",onBrand:"#110d25"} },
-  velvet: { id:"velvet", label:"Velvet", tagline:"Deep amethyst velvet, rose gold luminescence.", radius:"soft", headingFont:"serif", light:{paper:"#f9f6fa",surface:"#ffffff",surfaceSoft:"#f5eff7",ink:"#1f1626",inkMuted:"#6b5a75",line:"#e8dff0",lineStrong:"#d7c6e3",brand:"#a855f7",brandStrong:"#9333ea",brandSoft:"#f3e8ff",onBrand:"#fbf7ff"}, dark:{paper:"#0f0a14",surface:"#1a1223",surfaceSoft:"#23182d",ink:"#f3ecfa",inkMuted:"#c4b3d6",line:"#34283f",lineStrong:"#453552",brand:"#d8b4fe",brandStrong:"#e9d5ff",brandSoft:"#2d1f3a",onBrand:"#1a1026"} },
-  monolith: { id:"monolith", label:"Monolith", tagline:"Brutalist concrete, stark contrast, electric cyan.", radius:"sharp", headingFont:"sans", light:{paper:"#f7f7f7",surface:"#ffffff",surfaceSoft:"#f0f0f0",ink:"#0a0a0a",inkMuted:"#4a4a4a",line:"#dcdcdc",lineStrong:"#bfbfbf",brand:"#06b6d4",brandStrong:"#0891b2",brandSoft:"#e0f7fa",onBrand:"#f0fdff"}, dark:{paper:"#050505",surface:"#0f0f0f",surfaceSoft:"#151515",ink:"#f5f5f5",inkMuted:"#a3a3a3",line:"#262626",lineStrong:"#3a3a3a",brand:"#22d3ee",brandStrong:"#67e8f9",brandSoft:"#0f2f36",onBrand:"#041418"} },
-  horizon: { id:"horizon", label:"Horizon", tagline:"Twilight gradient sky, peach rose, indigo night.", radius:"rounded", headingFont:"serif", light:{paper:"#f9f7fc",surface:"#ffffff",surfaceSoft:"#f4f0fa",ink:"#1a1525",inkMuted:"#665a7a",line:"#e7e0f3",lineStrong:"#d5cbe6",brand:"#f59e0b",brandStrong:"#d97706",brandSoft:"#fef3c7",onBrand:"#1a120b"}, dark:{paper:"#0b0914",surface:"#151022",surfaceSoft:"#1d162b",ink:"#f3f0fa",inkMuted:"#b8a7d6",line:"#2f2542",lineStrong:"#3f3157",brand:"#fbbf24",brandStrong:"#f59e0b",brandSoft:"#2a2310",onBrand:"#1a140b"} },
+  inkline: {
+    id: "inkline", label: "Inkline", mode: "dual",
+    tagline: "Ink on paper by day, ink on slate by night.",
+    radius: "soft", headingFont: "serif",
+    light: { paper: "#f7f5f0", surface: "#ffffff", surfaceSoft: "#efeadf", ink: "#201c16", inkMuted: "#6d675e", line: "#e3dfd5", lineStrong: "#cfc9bc", brand: "#b4541e", brandStrong: "#934015", brandSoft: "#f7e7dc", onBrand: "#fdf6f0" },
+    dark: { paper: "#13151b", surface: "#1a1d25", surfaceSoft: "#232630", ink: "#eae8e3", inkMuted: "#a09da3", line: "#2c2e3a", lineStrong: "#3d4050", brand: "#e0926a", brandStrong: "#ecaf8d", brandSoft: "#38251a", onBrand: "#170d07" },
+    face: { density: "0.255rem", bodyFont: "sans", bodySize: "1.03rem", leading: "1.72", tracking: "0", displayTracking: "-0.025em", displayWeight: 620, chrome: "sans", dropcap: false },
+  },
+  broadsheet: {
+    id: "broadsheet", label: "Broadsheet", mode: "dual",
+    tagline: "Set like a front page: serif body, mono bylines, rules and drop caps.",
+    radius: "sharp", headingFont: "serif",
+    light: { paper: "#faf9f5", surface: "#ffffff", surfaceSoft: "#f1efe8", ink: "#191713", inkMuted: "#5c574e", line: "#e2dfd5", lineStrong: "#bcb7ab", brand: "#8c2e1e", brandStrong: "#6f2417", brandSoft: "#f6e5df", onBrand: "#fdf5f2" },
+    dark: { paper: "#141311", surface: "#1c1b19", surfaceSoft: "#242220", ink: "#e8e5df", inkMuted: "#a5a095", line: "#2d2b28", lineStrong: "#3e3a36", brand: "#e39a84", brandStrong: "#eec1b0", brandSoft: "#3a231d", onBrand: "#170e0a" },
+    face: { density: "0.235rem", bodyFont: "serif", bodySize: "1.03rem", leading: "1.75", tracking: "0.003em", displayTracking: "-0.008em", displayWeight: 700, chrome: "mono", dropcap: true, strokeWidth: "1.5px" },
+  },
+  folio: {
+    id: "folio", label: "Folio", mode: "dual",
+    tagline: "A quiet paperback: lingering serif, drop caps, forest thread.",
+    radius: "soft", headingFont: "serif",
+    light: { paper: "#f8f6ef", surface: "#ffffff", surfaceSoft: "#efebe0", ink: "#22201a", inkMuted: "#6b675c", line: "#e3ded1", lineStrong: "#cbc5b5", brand: "#276b52", brandStrong: "#1e5442", brandSoft: "#e3f0e8", onBrand: "#f6fbf8" },
+    dark: { paper: "#131610", surface: "#1b1f17", surfaceSoft: "#232920", ink: "#e9ecdf", inkMuted: "#a4ab98", line: "#2b3126", lineStrong: "#3c4436", brand: "#8fd0ad", brandStrong: "#b0e2c8", brandSoft: "#1e3629", onBrand: "#0c1712" },
+    face: { density: "0.275rem", bodyFont: "serif", bodySize: "1.05rem", leading: "1.8", tracking: "0.002em", displayTracking: "-0.02em", displayWeight: 640, chrome: "sans", dropcap: true },
+  },
+  atelier: {
+    id: "atelier", label: "Atelier", mode: "dual",
+    tagline: "Gallery air: near-monochrome, light display, cornices of white space.",
+    radius: "rounded", headingFont: "sans",
+    light: { paper: "#f7f7f5", surface: "#ffffff", surfaceSoft: "#efefec", ink: "#1d1d20", inkMuted: "#6f6f74", line: "#e6e6e2", lineStrong: "#cfcfca", brand: "#1c1c1f", brandStrong: "#0e0e10", brandSoft: "#ececec", onBrand: "#ffffff" },
+    dark: { paper: "#101012", surface: "#17171a", surfaceSoft: "#1e1e22", ink: "#ebecee", inkMuted: "#9c9ca3", line: "#2b2b30", lineStrong: "#3d3d44", brand: "#e6e6ea", brandStrong: "#f4f4f6", brandSoft: "#26262b", onBrand: "#131316" },
+    face: { density: "0.3rem", bodyFont: "sans", bodySize: "1.02rem", leading: "1.78", tracking: "0.002em", displayTracking: "-0.035em", displayWeight: 480, chrome: "sans", dropcap: false },
+  },
+  ledger: {
+    id: "ledger", label: "Ledger", mode: "dual",
+    tagline: "An engineer's log: mono stamps, ruled lines, ledger green.",
+    radius: "sharp", headingFont: "sans",
+    light: { paper: "#fbfcfa", surface: "#ffffff", surfaceSoft: "#f1f4f0", ink: "#101f16", inkMuted: "#5d6b61", line: "#dfe6df", lineStrong: "#b9c4ba", brand: "#157347", brandStrong: "#0f5c36", brandSoft: "#e0f2e7", onBrand: "#f5fcf7" },
+    dark: { paper: "#070d0a", surface: "#0d1712", surfaceSoft: "#122019", ink: "#dcefe2", inkMuted: "#89a795", line: "#1d3327", lineStrong: "#2a4636", brand: "#34d399", brandStrong: "#6ee7b7", brandSoft: "#10362a", onBrand: "#05130d" },
+    face: { density: "0.235rem", bodyFont: "sans", bodySize: "0.97rem", leading: "1.66", tracking: "0", displayTracking: "-0.005em", displayWeight: 600, chrome: "mono", dropcap: false },
+  },
+  nocturne: {
+    id: "nocturne", label: "Nocturne", mode: "dark",
+    tagline: "A midnight reading chamber — moonlit amber, generous leading.",
+    radius: "soft", headingFont: "serif",
+    light: { paper: "#0a0c16", surface: "#12141f", surfaceSoft: "#191c2a", ink: "#e8e7ec", inkMuted: "#a0a3bb", line: "#232739", lineStrong: "#333855", brand: "#e0b354", brandStrong: "#eec97e", brandSoft: "#332a12", onBrand: "#171004" },
+    dark: { paper: "#0a0c16", surface: "#12141f", surfaceSoft: "#191c2a", ink: "#e8e7ec", inkMuted: "#a0a3bb", line: "#232739", lineStrong: "#333855", brand: "#e0b354", brandStrong: "#eec97e", brandSoft: "#332a12", onBrand: "#171004" },
+    face: { density: "0.275rem", bodyFont: "sans", bodySize: "1.06rem", leading: "1.85", tracking: "0", displayTracking: "-0.02em", displayWeight: 600, chrome: "sans", dropcap: false },
+  },
+  console: {
+    id: "console", label: "Console", mode: "dark",
+    tagline: "Phosphor terminal: mono chrome, dashed rules, compiled look.",
+    radius: "sharp", headingFont: "sans",
+    light: { paper: "#060b08", surface: "#0c1510", surfaceSoft: "#101c15", ink: "#d3ecdc", inkMuted: "#85ab94", line: "#1d2d22", lineStrong: "#2b4233", brand: "#3ddc97", brandStrong: "#7feebc", brandSoft: "#0e2f22", onBrand: "#04120c" },
+    dark: { paper: "#060b08", surface: "#0c1510", surfaceSoft: "#101c15", ink: "#d3ecdc", inkMuted: "#85ab94", line: "#1d2d22", lineStrong: "#2b4233", brand: "#3ddc97", brandStrong: "#7feebc", brandSoft: "#0e2f22", onBrand: "#04120c" },
+    face: { density: "0.225rem", bodyFont: "sans", bodySize: "0.95rem", leading: "1.68", tracking: "0", displayTracking: "0", displayWeight: 560, chrome: "mono", dropcap: false, strokeStyle: "dashed" },
+  },
+  lantern: {
+    id: "lantern", label: "Lantern", mode: "dark",
+    tagline: "Harbor night — gradient paper, lamplight amber.",
+    radius: "soft", headingFont: "serif",
+    light: { paper: "#0a0e1c", surface: "#131829", surfaceSoft: "#1a2035", ink: "#eae9e1", inkMuted: "#a4a3b6", line: "#252b45", lineStrong: "#373e60", brand: "#ffb454", brandStrong: "#ffcb84", brandSoft: "#33240e", onBrand: "#190f02" },
+    dark: { paper: "#0a0e1c", surface: "#131829", surfaceSoft: "#1a2035", ink: "#eae9e1", inkMuted: "#a4a3b6", line: "#252b45", lineStrong: "#373e60", brand: "#ffb454", brandStrong: "#ffcb84", brandSoft: "#33240e", onBrand: "#190f02" },
+    face: {
+      density: "0.285rem", bodyFont: "sans", bodySize: "1.05rem", leading: "1.8", tracking: "0.001em",
+      displayTracking: "-0.02em", displayWeight: 620, chrome: "sans", dropcap: false,
+      paperBg: "radial-gradient(1100px 480px at 50% -140px, rgba(255,180,84,0.09), rgba(255,180,84,0) 65%, no-repeat), linear-gradient(#0a0e1c, #0a0e1c) fixed",
+    },
+  },
+};
+
+/* ------------------------- Font stacks for faces -------------------------- */
+
+const BODY_STACKS: Record<ThemeFace["bodyFont"], string> = {
+  sans: "var(--font-figtree), ui-sans-serif, system-ui, sans-serif",
+  serif: "var(--font-fraunces), ui-serif, Georgia, serif",
+};
+
+const CHROME_STACKS: Record<ThemeFace["chrome"], string> = {
+  sans: "var(--font-figtree), ui-sans-serif, system-ui, sans-serif",
+  mono: 'var(--font-geist-mono), ui-monospace, "SF Mono", monospace',
 };
 
 /* --------------------------- Radius & fonts ------------------------------- */
@@ -156,7 +255,7 @@ export function textOn(hex: string): string {
 /* ----------------------------- Resolution --------------------------------- */
 
 export function resolveTheme(theme: ThemeConfig): { light: Palette; dark: Palette } {
-  const preset = THEME_PRESETS[theme.preset] ?? THEME_PRESETS.amberglow;
+  const preset = THEME_PRESETS[theme.preset] ?? THEME_PRESETS.inkline;
   const accent = (theme.accent ?? "").trim();
   if (!accent || !hexToRgb(accent)) {
     return { light: preset.light, dark: preset.dark };
@@ -199,17 +298,50 @@ function cssVars(entries: Record<string, string>): string {
     .join(";");
 }
 
+/**
+ * The face of a preset as CSS custom properties. A single face covers both
+ * color modes (the palette is what changes between them), so the same values
+ * are emitted under `html:root` and `html.dark`.
+ */
+function faceVars(face: ThemeFace): Record<string, string> {
+  const vars: Record<string, string> = {
+    "--face-density": face.density,
+    "--face-body-font": BODY_STACKS[face.bodyFont],
+    "--face-body-size": face.bodySize,
+    "--face-leading": face.leading,
+    "--face-tracking": face.tracking,
+    "--face-display-tracking": face.displayTracking,
+    "--face-display-weight": String(face.displayWeight),
+    "--face-chrome-font": CHROME_STACKS[face.chrome],
+    "--face-stroke-width": face.strokeWidth ?? "1px",
+    "--face-stroke-style": face.strokeStyle ?? "solid",
+    "--face-dropcap-float": face.dropcap ? "left" : "none",
+    "--face-dropcap-size": face.dropcap ? "3.1em" : "1em",
+    "--face-dropcap-pad": face.dropcap ? "0.08em" : "0em",
+  };
+  if (face.paperBg) vars["--face-paper-bg"] = face.paperBg;
+  return vars;
+}
+
 export function buildThemeCss(theme: ThemeConfig): string {
+  const preset = THEME_PRESETS[theme.preset] ?? THEME_PRESETS.inkline;
   const { light, dark } = resolveTheme(theme);
   const radius = RADIUS_SCALES[theme.radius] ?? RADIUS_SCALES.soft;
   const serifStack =
     theme.headingFont === "sans"
       ? "var(--font-figtree), ui-sans-serif, system-ui, sans-serif"
       : "var(--font-fraunces), ui-serif, Georgia, serif";
+  const face = faceVars(preset.face);
 
-  const lightVars: Record<string, string> = {};
-  for (const [key, value] of Object.entries(light) as [keyof Palette, string][]) {
-    lightVars[PALETTE_CSS_NAMES[key]] = value;
+  // A darkness-first preset carries its one look in both slots: `html:root`
+  // inherits the dark palette and declares a dark color scheme, so the
+  // light/dark toggle (or a `prefers-color-scheme`) has no way to flip it.
+  const rootPalette = preset.mode === "dark" ? dark : light;
+  const rootScheme = preset.mode === "dark" ? "dark" : "light";
+
+  const rootVars: Record<string, string> = {};
+  for (const [key, value] of Object.entries(rootPalette) as [keyof Palette, string][]) {
+    rootVars[PALETTE_CSS_NAMES[key]] = value;
   }
 
   const darkVars: Record<string, string> = {};
@@ -218,7 +350,7 @@ export function buildThemeCss(theme: ThemeConfig): string {
   }
 
   return (
-    `html:root{${cssVars(lightVars)};${cssVars(radius)};--font-serif:${serifStack};color-scheme:light}` +
-    `html.dark{${cssVars(darkVars)};color-scheme:dark}`
+    `html:root{${cssVars(rootVars)};${cssVars(face)};${cssVars(radius)};--font-serif:${serifStack};color-scheme:${rootScheme}}` +
+    `html.dark{${cssVars(darkVars)};${cssVars(face)};color-scheme:dark}`
   );
 }

@@ -61,7 +61,7 @@ export function SettingsForm({ initial }: { initial: SiteConfig }) {
   const setTheme = (patch: Partial<ThemeConfig>) =>
     setConfig((prev) => ({ ...prev, theme: { ...prev.theme, ...patch } }));
 
-  const preset = THEME_PRESETS[config.theme.preset] ?? THEME_PRESETS.amberglow;
+  const preset = THEME_PRESETS[config.theme.preset] ?? THEME_PRESETS.inkline;
   // The accent shown in the picker: a custom override, else the preset brand.
   const effectiveAccent = config.theme.accent || preset.light.brand;
   // The <input type="color"> needs a strict #rrggbb value at all times.
@@ -188,7 +188,7 @@ export function SettingsForm({ initial }: { initial: SiteConfig }) {
             onClick={() =>
               setConfig((prev) => ({
                 ...prev,
-                theme: { preset: "amberglow", accent: "", radius: THEME_PRESETS.amberglow.radius, headingFont: THEME_PRESETS.amberglow.headingFont },
+                theme: { preset: "inkline", accent: "", radius: THEME_PRESETS.inkline.radius, headingFont: THEME_PRESETS.inkline.headingFont },
               }))
             }
             className="rounded-lg px-2.5 py-1 text-xs font-medium text-ink-muted transition-colors hover:bg-surface-soft hover:text-ink"
@@ -204,7 +204,7 @@ export function SettingsForm({ initial }: { initial: SiteConfig }) {
         {/* Preset picker */}
         <div>
           <span className="mb-1.5 block text-sm font-medium text-ink">Style preset</span>
-            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-5">
+            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
             {(Object.keys(THEME_PRESETS) as ThemePreset[]).map((id) => {
               const def = THEME_PRESETS[id];
               const selected = config.theme.preset === id;

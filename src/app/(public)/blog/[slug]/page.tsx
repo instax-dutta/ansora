@@ -73,7 +73,7 @@ function Sources({ sources }: { sources: SourceItem[] }) {
     <section aria-labelledby="sources-heading" className="mt-12">
       <h2
         id="sources-heading"
-        className="font-serif text-2xl font-semibold text-ink"
+        className="font-display text-2xl text-ink"
       >
         Sources
       </h2>
@@ -182,7 +182,7 @@ export default async function BlogPostPage({
               />
             )}
 
-            <h1 className="font-serif text-3xl font-semibold leading-tight tracking-tight text-ink sm:text-4xl">
+            <h1 className="font-display text-3xl leading-tight tracking-display text-ink sm:text-4xl">
               {meta.title}
             </h1>
 
@@ -235,7 +235,7 @@ export default async function BlogPostPage({
               className="post-answer mb-10 rounded-2xl border border-line border-l-4 border-l-brand bg-surface p-5"
             >
               {meta.answer.trim() !== meta.excerpt.trim() && (
-                <p className="mb-2 text-xs font-semibold uppercase tracking-wider text-ink-muted">
+                <p className="mb-2 text-xs font-eyebrow font-semibold uppercase tracking-wider text-ink-muted">
                   In short
                 </p>
               )}
@@ -253,7 +253,7 @@ export default async function BlogPostPage({
             >
               <h2
                 id="takeaways-heading"
-                className="mb-3 text-xs font-semibold uppercase tracking-wider text-ink-muted"
+                className="mb-3 text-xs font-eyebrow font-semibold uppercase tracking-wider text-ink-muted"
               >
                 Key takeaways
               </h2>
@@ -274,7 +274,7 @@ export default async function BlogPostPage({
               article down the screen. */}
           {showToc && (
             <details className="mt-8 rounded-2xl border border-line bg-surface p-4 lg:hidden">
-              <summary className="cursor-pointer list-none text-xs font-semibold uppercase tracking-wider text-ink-muted [&::-webkit-details-marker]:hidden">
+              <summary className="cursor-pointer list-none text-xs font-eyebrow font-semibold uppercase tracking-wider text-ink-muted [&::-webkit-details-marker]:hidden">
                 On this page
               </summary>
               <div className="mt-3 border-l border-line pl-4 text-sm">
@@ -291,7 +291,7 @@ export default async function BlogPostPage({
               aria-label="Frequently asked questions"
               className="post-faq mt-12"
             >
-              <h2 className="font-serif text-2xl font-semibold text-ink">
+              <h2 className="font-display text-2xl text-ink">
                 Frequently asked questions
               </h2>
               <div className="mt-5 divide-y divide-line overflow-hidden rounded-2xl border border-line bg-surface">
@@ -363,7 +363,7 @@ export default async function BlogPostPage({
                   <span className="text-xs uppercase tracking-wider text-ink-muted">
                     Older
                   </span>
-                  <span className="mt-1 block font-serif font-semibold text-ink group-hover:text-brand">
+                  <span className="mt-1 block font-display text-ink group-hover:text-brand">
                     {older.title}
                   </span>
                 </Link>
@@ -378,7 +378,7 @@ export default async function BlogPostPage({
                   <span className="text-xs uppercase tracking-wider text-ink-muted">
                     Newer
                   </span>
-                  <span className="mt-1 block font-serif font-semibold text-ink group-hover:text-brand">
+                  <span className="mt-1 block font-display text-ink group-hover:text-brand">
                     {newer.title}
                   </span>
                 </Link>
@@ -390,7 +390,7 @@ export default async function BlogPostPage({
             <section aria-labelledby="related-heading" className="mt-10">
               <h2
                 id="related-heading"
-                className="font-serif text-xl font-semibold text-ink"
+                className="font-display text-xl text-ink"
               >
                 Related posts
               </h2>

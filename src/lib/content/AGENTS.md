@@ -7,7 +7,7 @@ The **ContentAdapter pattern** — the heart of Ansora. All content I/O goes thr
 - `index.ts` — `ContentAdapter` interface + `getAdapter()` (the **only** place that branches on `DEPLOYMENT_MODE`) + `safeListPosts()`
 - `local-git.ts` — `LocalGitAdapter`: disk + `simple-git` commits (optional push via `GIT_AUTO_PUSH`)
 - `github.ts` — `GitHubApiAdapter`: octokit Contents API for writes (SHA-based updates), **raw.githubusercontent.com for reads**, and tree-SHA-aware parsed-list caching
-- `types.ts` — zod schemas: `postMetaSchema`, `siteConfigSchema`, `themeConfigSchema`, `analyticsConfigSchema` + defaults; `serializeSiteConfig()`; **strict vs tolerant parsing** (see below) (`accent` must be hex or empty; `baseUrl` must be an absolute http(s) URL)
+- `types.ts` — zod schemas: `postMetaSchema`, `siteConfigSchema` (+ tolerant `siteConfigReadSchema` for retired theme presets), `themeConfigSchema`, `analyticsConfigSchema` + defaults; `serializeSiteConfig()`; **strict vs tolerant parsing** (see below) (`accent` must be hex or empty; `baseUrl` must be an absolute http(s) URL)
 - `slug.ts` — `isSafeSlug()` slug safety gate: both adapters call it before any slug touches a file path / repo path (path-traversal defense)
 - `cache.ts` — `TtlCache` (in-memory, per-instance)
 - `bodies.ts` — `loadRecentBodies` / `loadPublishedPost` / `loadPublishedBodies` for surfaces that need post *content*; bounded by a count cap **and** a wall-clock budget

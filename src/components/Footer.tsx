@@ -12,17 +12,17 @@ export async function Footer() {
   ].filter((s) => s.href);
 
   return (
-    <footer className="border-t border-line bg-surface-soft/50">
+    <footer className="border-stroke border-t border-line bg-surface-soft/50">
       <div className="mx-auto flex w-full max-w-5xl flex-col gap-6 px-4 py-10 sm:px-6 md:flex-row md:items-start md:justify-between">
         <div className="max-w-sm">
-          <p className="font-serif text-lg font-semibold text-ink">{config.title}</p>
+          <p className="font-display text-lg text-ink">{config.title}</p>
           <p className="mt-1.5 text-sm leading-relaxed text-ink-muted">
             {config.description}
           </p>
         </div>
 
         <nav aria-label="Footer" className="flex flex-col gap-2 text-sm">
-          <span className="text-xs font-semibold uppercase tracking-wider text-ink-muted">
+          <span className="text-xs font-eyebrow font-semibold uppercase tracking-wider text-ink-muted">
             Explore
           </span>
           <Link href="/" className="text-ink-muted transition-colors hover:text-brand">
@@ -50,7 +50,7 @@ export async function Footer() {
 
         {socials.length > 0 && (
           <div className="flex flex-col gap-2 text-sm">
-            <span className="text-xs font-semibold uppercase tracking-wider text-ink-muted">
+            <span className="text-xs font-eyebrow font-semibold uppercase tracking-wider text-ink-muted">
               Elsewhere
             </span>
             {socials.map((s) => (
@@ -68,7 +68,7 @@ export async function Footer() {
         )}
       </div>
 
-      <div className="border-t border-line py-4">
+      <div className="border-stroke border-t border-line py-4">
         <p className="mx-auto flex w-full max-w-5xl items-center justify-between gap-2 px-4 text-xs text-ink-muted sm:px-6">
           <span>
             © {year} {config.title}. Written in Markdown, served with care.

@@ -134,9 +134,28 @@ The governing idea: **AI engines do not just read pages, they assemble an entity
 
 ### 4.6 Theme system (added later — do not regress)
 
-- **Four curated presets** — `warm`, `ocean`, `forest`, `midnight` — each with a full light + dark palette, defined in **`src/lib/theme.ts`** (`THEME_PRESETS`). The Midnight preset uses navy backgrounds with a warm gold accent.
+- **Theme = voice, not a color chip.** `src/lib/theme.ts` curates eight full
+  typographic identities (`inkline` default; `broadsheet`, `folio`, `atelier`,
+  `ledger` dual with light+dark; `nocturne`, `console`, `lantern`
+  dark-only), each with complete light+dark palettes **and a face** —
+  density (`--face-density` feeds Tailwind's `--spacing`, so the whole site
+  re-airs or tightens), body voice (family/size/leading/tracking), display
+  voice (tracking + weight via `font-display`/`tracking-display`), chrome
+  voice (mono vs sans labels via `font-eyebrow`), prose furniture (drop caps),
+  and structural rules (`border-stroke` width/style). A voice canvas swap the
+  paper behind the flat palette with a gradient (`lantern`). Design brief:
+  `docs/design/theme-voices.md`.
+- **Modes**: `THEME_PRESETS[id].mode` is `dual` (light/dark toggle), or
+  `dark`/`light` single-mode. A single-mode preset stores its one palette in
+  BOTH `light` and `dark` slots so the engine stays uniform, carries one
+  `color-scheme`, and the header **hides the light/dark toggle** for it.
 - Admins can override **accent color** (derived `brandStrong`/`brandSoft`/`onBrand` computed with WCAG-aware `textOn`/`contrast`), **corner radius** (`RADIUS_SCALES` mapped onto Tailwind `--radius-*`), and **heading font** (`--font-serif` swap). A curated set of **accent swatches** (`ACCENT_SWATCHES`) appears as clickable color chips in the Appearance form.
-- `buildThemeCss(theme)` emits the palette as CSS custom properties with `html:root` / `html.dark` selectors (higher specificity than `globals.css` defaults).
+- `buildThemeCss(theme)` emits the palette **and the face** as CSS custom
+  properties with `html:root` / `html.dark` selectors (higher specificity than
+  `globals.css` defaults). Reads of `site.config.json` go through the
+  tolerant `siteConfigReadSchema`, so a preset id curated away by a newer
+  release degrades to the default voice instead of wiping the author's config;
+  the admin write path keeps the strict schema.
 - The **root layout** (`src/app/layout.tsx`) renders the `<style>` block; `getSiteConfig().catch(() => DEFAULT_SITE_CONFIG)` so a style block never fails a build.
 - The `theme` object is persisted per site in `content/site.config.json` via **Admin → Settings → Appearance**. All changes are fully backwards compatible — existing configs with 3 presets continue to work (the schema default is `"warm"`).
 

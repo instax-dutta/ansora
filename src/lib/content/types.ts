@@ -233,22 +233,15 @@ const HEX_COLOR = /^#([0-9a-fA-F]{6}|[0-9a-fA-F]{3})$/;
 
 export const themeConfigSchema = z.object({
   preset: z.enum([
-    "amberglow",
-    "abyss",
-    "moss",
-    "noir",
-    "neongrid",
-    "synthwave",
-    "raku",
-    "ember",
-    "aurora",
-    "galaxy",
-    "solstice",
-    "prism",
-    "velvet",
-    "monolith",
-    "horizon",
-  ]).default("amberglow"),
+    "inkline",
+    "broadsheet",
+    "folio",
+    "atelier",
+    "ledger",
+    "nocturne",
+    "console",
+    "lantern",
+  ]).default("inkline"),
   // Strict hex so an arbitrary string can never ride into the injected CSS.
   // (resolveTheme guards this too — belt and braces.)
   accent: z
@@ -263,11 +256,23 @@ export const themeConfigSchema = z.object({
 export type ThemeConfig = z.infer<typeof themeConfigSchema>;
 
 export const DEFAULT_THEME_CONFIG: ThemeConfig = {
-  preset: "amberglow",
+  preset: "inkline",
   accent: "",
   radius: "soft",
   headingFont: "serif",
 };
+
+/**
+ * Read-tolerant variant of the theme schema for parsing site.config.json off
+ * disk or the API. A preset id written by an older Ansora (say "raku" from
+ * before a curation) must degrade to the default theme — falling all the way
+ * back to DEFAULT_SITE_CONFIG would silently reset the author's title, base
+ * URL and analytics. Writes still validate against the strict schema above,
+ * so the admin API keeps rejecting unknown preset ids.
+ */
+export const themeConfigReadSchema = themeConfigSchema.extend({
+  preset: themeConfigSchema.shape.preset.catch(DEFAULT_THEME_CONFIG.preset),
+});
 
 /**
  * Optional analytics integration (see src/lib/analytics).
@@ -352,6 +357,17 @@ export const DEFAULT_SITE_CONFIG: SiteConfig = {
   theme: DEFAULT_THEME_CONFIG,
   analytics: DEFAULT_ANALYTICS_CONFIG,
 };
+
+/**
+ * Tolerant read schema for site.config.json — same shape as
+ * `siteConfigSchema`, but a theme preset this version no longer knows degrades
+ * to the default instead of failing the whole parse (and with it the author's
+ * title, base URL and analytics). The admin write path keeps the strict
+ * `siteConfigSchema`, so unknown ids are still rejected at the API.
+ */
+export const siteConfigReadSchema = siteConfigSchema.extend({
+  theme: themeConfigReadSchema.default(DEFAULT_THEME_CONFIG),
+});
 
 /**
  * Serialize site config for the content repo.

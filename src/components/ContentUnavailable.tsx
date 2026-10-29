@@ -21,7 +21,7 @@ export function ContentUnavailable() {
       role="status"
       className="rounded-2xl border border-line border-l-4 border-l-brand bg-surface p-8"
     >
-      <h2 className="font-serif text-xl font-semibold text-ink">
+      <h2 className="font-display text-xl text-ink">
         Posts are temporarily unavailable
       </h2>
       <p className="mt-2 text-sm leading-relaxed text-ink-muted">

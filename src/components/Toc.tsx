@@ -38,7 +38,7 @@ export function Toc({
       aria-label="Table of contents"
       className="rounded-2xl border border-line bg-surface p-5"
     >
-      <p className="text-xs font-semibold uppercase tracking-wider text-ink-muted">
+      <p className="text-xs font-eyebrow font-semibold uppercase tracking-wider text-ink-muted">
         On this page
       </p>
       <ul className="mt-3 space-y-2 border-l border-line pl-4 text-sm">

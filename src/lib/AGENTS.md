@@ -7,7 +7,7 @@ All non-UI logic: content adapters, auth, markdown pipeline, SEO/AEO scoring, en
 - `content/` — ContentAdapter pattern → see `content/AGENTS.md`
 - `markdown/` — shared pipeline + SEO/AEO scorers + cross-post overlap → see `markdown/AGENTS.md`
 - `auth/session.ts` — JWT (jose) + bcrypt credentials + login rate limiting (single file)
-- `theme.ts` — theme presets (warm/ocean/forest/midnight + opencode/claude/minimax and their -dark variants) + `buildThemeCss`
+- `theme.ts` — theme "voices" (8 curated typographic identities, some dual-mode, some dark-only) + per-preset faces (density/body/display/chrome/stroke) + `buildThemeCss`
 - `site-config.ts` — `getSiteConfig()` with 30 s TTL; `SITE_URL` seeds `baseUrl` until changed in admin
 - `seo/` — the AI-search layer → see `seo/AGENTS.md`
 - `utils.ts` — slugify, `tagSlug`/`resolveTagFromSlug`, dates, word counts, escapeXml, stripMarkdown, truncate (pure, imported by client code)
@@ -16,7 +16,7 @@ All non-UI logic: content adapters, auth, markdown pipeline, SEO/AEO scoring, en
 
 ## Local Contracts
 - `auth/session.ts`: env credentials only; `verifyCredentials` **throws** on misconfiguration and runs a dummy bcrypt compare on username mismatch (no timing oracle); rate limit 5 failed attempts / 15 min per IP (in-memory, per-instance — soft in serverless) with a hard 10k-IP map cap; `isCrossOrigin(request)` is the CSRF guard used by every mutating admin API route.
-- `theme.ts`: palette hex lives here and in the `globals.css` fallbacks; accent derivation is WCAG-aware (`textOn`/`contrast`); `buildThemeCss` emits `html:root`/`html.dark` custom properties.
+- `theme.ts`: palette + face hex/stacks live here and in the `globals.css` fallbacks; accent derivation is WCAG-aware (`textOn`/`contrast`); `buildThemeCss` emits `html:root`/`html.dark` custom properties (palette **and** face tokens). Single-mode voices mirror one palette into both slots and the Header hides the toggle for them.
 - `utils.ts` `tagSlug`/`resolveTagFromSlug`: tags are stored and displayed verbatim, and these are pure URL helpers. Resolution is slug-based and case/encoding-insensitive so **legacy raw-tag URLs keep working**; every tag link must go through `tagSlug()`. Never rewrite a stored tag to its slug form.
 - Caches (site-config 30 s, GitHub adapter 60 s, analytics reports 120 s) are **per-instance** — never rely on cross-instance invalidation. `invalidateSiteConfig()` exists for the one case where a write must be visible immediately (analytics settings decide which numbers the next report queries).
 

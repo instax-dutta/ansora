@@ -41,24 +41,17 @@ describe("color helpers", () => {
 });
 
 describe("presets", () => {
-  it("defines all four presets with full light+dark palettes", () => {
+  it("defines the curated voices with full light+dark palettes and a face", () => {
     const ids = Object.keys(THEME_PRESETS);
     expect(ids.sort()).toEqual([
-      "abyss",
-      "amberglow",
-      "aurora",
-      "ember",
-      "galaxy",
-      "horizon",
-      "monolith",
-      "moss",
-      "neongrid",
-      "noir",
-      "prism",
-      "raku",
-      "solstice",
-      "synthwave",
-      "velvet",
+      "atelier",
+      "broadsheet",
+      "console",
+      "folio",
+      "inkline",
+      "lantern",
+      "ledger",
+      "nocturne",
     ]);
     for (const id of ids) {
       const preset = THEME_PRESETS[id as keyof typeof THEME_PRESETS];
@@ -68,15 +61,20 @@ describe("presets", () => {
         expect(preset.light[key]).toMatch(/^#[0-9a-f]{6}$/i);
         expect(preset.dark[key]).toMatch(/^#[0-9a-f]{6}$/i);
       }
+      // The face is what makes the theme a material, not a palette chip.
+      expect(preset.face.density).toMatch(/rem$/);
+      expect(["sans", "serif"]).toContain(preset.face.bodyFont);
+      expect(["sans", "mono"]).toContain(preset.face.chrome);
+      expect(typeof preset.face.displayWeight).toBe("number");
     }
   });
 });
 
 describe("resolveTheme", () => {
   it("returns the preset palettes when no accent override is set", () => {
-    const { light, dark } = resolveTheme({ ...DEFAULT_THEME_CONFIG, preset: "abyss" });
-    expect(light.brand).toBe(THEME_PRESETS.abyss.light.brand);
-    expect(dark.brand).toBe(THEME_PRESETS.abyss.dark.brand);
+    const { light, dark } = resolveTheme({ ...DEFAULT_THEME_CONFIG, preset: "broadsheet" });
+    expect(light.brand).toBe(THEME_PRESETS.broadsheet.light.brand);
+    expect(dark.brand).toBe(THEME_PRESETS.broadsheet.dark.brand);
   });
 
   it("applies a custom accent and derives its variants", () => {
@@ -91,19 +89,19 @@ describe("resolveTheme", () => {
 
   it("ignores malformed accents", () => {
     const { light } = resolveTheme({ ...DEFAULT_THEME_CONFIG, accent: "hotpink" });
-    expect(light.brand).toBe(THEME_PRESETS.amberglow.light.brand);
+    expect(light.brand).toBe(THEME_PRESETS.inkline.light.brand);
   });
 
-  it("resolves the midnight preset without accent override", () => {
-    const { light, dark } = resolveTheme({ ...DEFAULT_THEME_CONFIG, preset: "noir" });
-    expect(light.brand).toBe(THEME_PRESETS.noir.light.brand);
-    expect(dark.brand).toBe(THEME_PRESETS.noir.dark.brand);
-    expect(dark.paper).toBe("#08070c");
+  it("resolves the nocturne preset without accent override", () => {
+    const { light, dark } = resolveTheme({ ...DEFAULT_THEME_CONFIG, preset: "nocturne" });
+    expect(light.brand).toBe(THEME_PRESETS.nocturne.light.brand);
+    expect(dark.brand).toBe(THEME_PRESETS.nocturne.dark.brand);
+    expect(dark.paper).toBe("#0a0c16");
   });
 
-  it("falls back to warm for unknown presets", () => {
+  it("falls back to the default voice for unknown presets", () => {
     const { light } = resolveTheme({ ...DEFAULT_THEME_CONFIG, preset: "neon" as never });
-    expect(light.brand).toBe(THEME_PRESETS.amberglow.light.brand);
+    expect(light.brand).toBe(THEME_PRESETS.inkline.light.brand);
   });
 });
 
@@ -112,9 +110,9 @@ describe("buildThemeCss", () => {
     const css = buildThemeCss(DEFAULT_THEME_CONFIG);
     expect(css).toContain("html:root{");
     expect(css).toContain("html.dark{");
-    expect(css).toContain("--paper:" + THEME_PRESETS.amberglow.light.paper);
-    expect(css).toContain("--brand:" + THEME_PRESETS.amberglow.light.brand);
-    expect(css).toContain("--paper:" + THEME_PRESETS.amberglow.dark.paper);
+    expect(css).toContain("--paper:" + THEME_PRESETS.inkline.light.paper);
+    expect(css).toContain("--brand:" + THEME_PRESETS.inkline.light.brand);
+    expect(css).toContain("--paper:" + THEME_PRESETS.inkline.dark.paper);
     expect(css).toContain("color-scheme:light");
     expect(css).toContain("color-scheme:dark");
   });
@@ -146,5 +144,39 @@ describe("buildThemeCss", () => {
     });
     expect(css).toContain("--radius-lg:" + RADIUS_SCALES.soft["--radius-lg"]);
     expect(css).toContain("--font-serif:var(--font-fraunces)");
+  });
+
+  it("emits the face tokens a preset chooses", () => {
+    // Broadsheet sets serif body, mono chrome, ruled strokes and a drop cap.
+    const css = buildThemeCss({ ...DEFAULT_THEME_CONFIG, preset: "broadsheet" });
+    expect(css).toContain("--face-density:0.235rem");
+    expect(css).toContain("--face-body-font:var(--font-fraunces)");
+    expect(css).toContain("--face-chrome-font:var(--font-geist-mono)");
+    expect(css).toContain("--face-stroke-width:1.5px");
+    expect(css).toContain("--face-dropcap-float:left");
+    // Emitted on both selectors: the voice covers light and dark alike.
+    expect(css.split("--face-density:0.235rem").length - 1).toBe(2);
+
+    // Ledger keeps hairline solid strokes and no drop cap… but underlines.
+    const ledger = buildThemeCss({ ...DEFAULT_THEME_CONFIG, preset: "ledger" });
+    expect(ledger).toContain("--face-stroke-style:solid");
+    expect(ledger).toContain("--face-dropcap-float:none");
+  });
+
+  it("carries a dark-only voice in both selectors", () => {
+    const css = buildThemeCss({ ...DEFAULT_THEME_CONFIG, preset: "console" });
+    const root = css.slice(0, css.indexOf("html.dark"));
+    // The root (light) slot mirrors the dark palette…
+    expect(root).toContain("--paper:" + THEME_PRESETS.console.dark.paper);
+    expect(root).toContain("color-scheme:dark");
+    // …and both selectors agree, so the toggle has nothing to flip.
+    expect(css).toContain("--brand:" + THEME_PRESETS.console.dark.brand);
+    // Dashed rules are the console voice.
+    expect(css).toContain("--face-stroke-style:dashed");
+  });
+
+  it("paints lantern's atmosphere through the paper background token", () => {
+    const css = buildThemeCss({ ...DEFAULT_THEME_CONFIG, preset: "lantern" });
+    expect(css).toContain("--face-paper-bg:radial-gradient");
   });
 });

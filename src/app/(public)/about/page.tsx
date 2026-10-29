@@ -56,7 +56,7 @@ export default async function AboutPage() {
         <span className="text-ink">About</span>
       </nav>
 
-      <h1 className="font-serif text-3xl font-semibold tracking-tight text-ink sm:text-4xl">
+      <h1 className="font-display text-3xl tracking-display text-ink sm:text-4xl">
         {config.author}
       </h1>
       {config.authorRole && (
@@ -76,7 +76,7 @@ export default async function AboutPage() {
 
       {links.length > 0 && (
         <div className="mt-10">
-          <h2 className="text-xs font-semibold uppercase tracking-wider text-ink-muted">
+          <h2 className="text-xs font-eyebrow font-semibold uppercase tracking-wider text-ink-muted">
             Elsewhere
           </h2>
           <ul className="mt-3 flex flex-wrap gap-2">

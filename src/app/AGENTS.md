@@ -5,7 +5,7 @@ App Router routes: the public site, the admin panel, the admin API, and the mach
 
 ## Ownership
 - `layout.tsx` — root layout: fonts, metadata, feed autodiscovery default, and the **theme injection** (server-rendered `<style>` from site config; falls back to `DEFAULT_SITE_CONFIG` on config errors)
-- `globals.css` — Tailwind v4, live theme tokens, `prose-warm` article styles
+- `globals.css` — Tailwind v4, live theme tokens + voice utilities (`font-display`, `tracking-display`, `font-eyebrow`, `border-stroke`, `--face-density`), `prose-warm` article styles (drop caps via face tokens)
 - `(public)/layout.tsx` — the public shell: Header + Footer + the **opt-in analytics tracker** (`<AnalyticsScript>`), which is why `/admin`, `/api` and `/md` can never load it
 - `(public)/` — `/`, `/blog`, `/blog/[slug]`, `/tags`, `/tags/[tag]`, `/topics`, `/about`
 - `admin/` — login + dashboard (posts list, editor, settings, analytics); guarded by `(dashboard)/layout.tsx` via `getSession()` → redirect to `/admin/login`
@@ -34,6 +34,7 @@ App Router routes: the public site, the admin panel, the admin API, and the mach
 - Error/404 pages must not leak stack traces.
 - **Analytics never touches the SEO surface.** The tracker is emitted by `(public)/layout.tsx` only (never `/admin`, `/api` or `/md`), no analytics setting may change a canonical URL, indexability, sitemap, feed or JSON-LD output, and no page may block rendering on a provider response. A degraded provider is reported in the panel and nowhere else.
 - The root-layout theme injection **must stay server-rendered** — do not move it client-side (breaks SSG and causes theme flash).
+- **Theme voices are materials, not palettes.** Public headings render through `font-display` + `tracking-display` (the face owns the weight — never re-add `font-semibold` next to it), label stamps through `font-eyebrow`, structural rules through `border-stroke`. Site config reads use the tolerant `themeConfigReadSchema` (`types.ts`) so a retired preset id degrades instead of resetting the author's config; the admin write path keeps the strict schema.
 
 ## Work Guidance
 - Keep SEO metadata complete on new public routes: canonical via `withFeeds`, OG/Twitter, and a JSON-LD graph via `<JsonLd>`.

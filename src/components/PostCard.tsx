@@ -4,7 +4,7 @@ import { formatDate } from "@/lib/utils";
 
 export function PostCard({ post }: { post: PostMeta }) {
   return (
-    <article className="group relative flex flex-col overflow-hidden rounded-2xl border border-line bg-surface transition-all duration-200 hover:-translate-y-0.5 hover:border-line-strong hover:shadow-[0_10px_36px_-12px_rgba(79,51,20,0.25)] dark:hover:shadow-[0_10px_36px_-12px_rgba(0,0,0,0.8)]">
+    <article className="group relative flex flex-col overflow-hidden rounded-2xl border-stroke border border-line bg-surface transition-all duration-200 hover:-translate-y-0.5 hover:border-line-strong hover:shadow-[0_10px_36px_-12px_rgba(79,51,20,0.25)] dark:hover:shadow-[0_10px_36px_-12px_rgba(0,0,0,0.8)]">
       {post.coverImage ? (
         <Link
           href={`/blog/${post.slug}`}
@@ -23,7 +23,7 @@ export function PostCard({ post }: { post: PostMeta }) {
         </Link>
       ) : (
         <div className="aspect-[16/9] w-full bg-brand-soft/60" aria-hidden="true">
-          <div className="flex h-full items-center justify-center font-serif text-2xl font-semibold text-brand/50">
+          <div className="flex h-full items-center justify-center font-display text-2xl text-brand/50">
             {post.title.slice(0, 1).toUpperCase() || "A"}
           </div>
         </div>
@@ -32,12 +32,12 @@ export function PostCard({ post }: { post: PostMeta }) {
       <div className="flex flex-1 flex-col gap-2.5 p-5">
         <time
           dateTime={post.date}
-          className="text-xs font-medium uppercase tracking-wider text-ink-muted"
+          className="text-xs font-eyebrow font-medium uppercase tracking-wider text-ink-muted"
         >
           {formatDate(post.date)}
         </time>
 
-        <h2 className="font-serif text-xl font-semibold leading-snug text-ink">
+        <h2 className="font-display text-xl leading-snug text-ink">
           <Link
             href={`/blog/${post.slug}`}
             className="rounded-sm transition-colors hover:text-brand"

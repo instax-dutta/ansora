@@ -55,12 +55,36 @@
   --font-sans: var(--font-figtree), ui-sans-serif, system-ui, sans-serif;
   --font-serif: var(--font-fraunces), ui-serif, Georgia, serif;
   --font-mono: var(--font-geist-mono), ui-monospace, "SF Mono", monospace;
+
+  /* The density dial: every spacing utility is unit × var(--spacing), so a
+     theme that sets --face-density re-airs or tightens the whole site. */
+  --spacing: var(--face-density, 0.25rem);
+}
+
+/* Theme "voice" utilities — emitted per preset by buildThemeCss. */
+@utility font-display {
+  font-family: var(--font-serif);
+  font-weight: var(--face-display-weight, 620);
+}
+@utility tracking-display {
+  letter-spacing: var(--face-display-tracking, -0.02em);
+}
+@utility font-eyebrow {
+  font-family: var(--face-chrome-font, var(--font-sans));
+}
+/* Structural rules: the hairline width and the line style are theme voice. */
+@utility border-stroke {
+  border-width: var(--face-stroke-width, 1px);
+  border-style: var(--face-stroke-style, solid);
 }
 
 body {
-  background: var(--paper);
+  background: var(--face-paper-bg, var(--paper));
   color: var(--ink);
-  font-family: var(--font-sans);
+  font-family: var(--face-body-font, var(--font-sans));
+  font-size: var(--face-body-size, 1rem);
+  line-height: var(--face-leading, 1.7);
+  letter-spacing: var(--face-tracking, normal);
   -webkit-font-smoothing: antialiased;
 }
 
@@ -95,6 +119,9 @@ body {
   --tw-prose-pre-bg: transparent;
   --tw-prose-th-borders: var(--line-strong);
   --tw-prose-td-borders: var(--line);
+  /* Serif-body voices (Broadsheet, Folio) set the body family explicitly; the
+     prose container must follow the body, not the chrome. */
+  font-family: var(--face-body-font, inherit);
 }
 
 .prose-warm h1,
@@ -102,7 +129,18 @@ body {
 .prose-warm h3,
 .prose-warm h4 {
   font-family: var(--font-serif), ui-serif, Georgia, serif;
-  letter-spacing: -0.015em;
+  letter-spacing: var(--face-display-tracking, -0.015em);
+}
+
+/* Prose furniture: the drop cap is a theme voice, driven entirely by face
+   variables so a capped theme switches on with one token and a non-capped
+   theme reads as a no-op. */
+.prose-warm > p:first-of-type::first-letter {
+  float: var(--face-dropcap-float, none);
+  font-size: var(--face-dropcap-size, 1em);
+  line-height: 0.82;
+  padding-right: var(--face-dropcap-pad, 0em);
+  font-weight: var(--face-dropcap-weight, 620);
 }
 
 /* Inline code — keep fenced blocks untouched (shiki owns those). */

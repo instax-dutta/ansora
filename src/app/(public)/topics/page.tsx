@@ -71,7 +71,7 @@ export default async function TopicsPage() {
   if (published.length === 0) {
     return (
       <div className="mx-auto w-full max-w-5xl px-4 py-10 sm:px-6 sm:py-14">
-        <h1 className="font-serif text-3xl font-semibold tracking-tight text-ink sm:text-4xl">
+        <h1 className="font-display text-3xl tracking-display text-ink sm:text-4xl">
           Topics
         </h1>
         <div className="mt-8">
@@ -95,7 +95,7 @@ export default async function TopicsPage() {
         <span className="text-ink">Topics</span>
       </nav>
 
-      <h1 className="mt-3 font-serif text-3xl font-semibold tracking-tight text-ink sm:text-4xl">
+      <h1 className="mt-3 font-display text-3xl tracking-display text-ink sm:text-4xl">
         Topics
       </h1>
       <p className="mt-3 max-w-2xl text-ink-muted">
@@ -107,7 +107,7 @@ export default async function TopicsPage() {
         <section aria-labelledby="primary-topics" className="mt-10">
           <h2
             id="primary-topics"
-            className="text-xs font-semibold uppercase tracking-wider text-ink-muted"
+            className="text-xs font-eyebrow font-semibold uppercase tracking-wider text-ink-muted"
           >
             Covered in depth
           </h2>
@@ -119,7 +119,7 @@ export default async function TopicsPage() {
         <section aria-labelledby="more-topics" className="mt-10">
           <h2
             id="more-topics"
-            className="text-xs font-semibold uppercase tracking-wider text-ink-muted"
+            className="text-xs font-eyebrow font-semibold uppercase tracking-wider text-ink-muted"
           >
             Also covered
           </h2>
@@ -131,7 +131,7 @@ export default async function TopicsPage() {
         <section aria-labelledby="topic-posts" className="mt-14">
           <h2
             id="topic-posts"
-            className="font-serif text-xl font-semibold text-ink"
+            className="font-display text-xl text-ink"
           >
             Most covered
           </h2>

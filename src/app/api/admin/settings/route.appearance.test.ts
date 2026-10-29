@@ -16,7 +16,7 @@ import { renderToReadableStream } from "react-dom/server";
 import { NextRequest } from "next/server";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { createSessionToken } from "@/lib/auth/session";
-import { THEME_PRESETS } from "@/lib/theme";
+import { THEME_PRESETS, mix } from "@/lib/theme";
 import RootLayout from "@/app/layout";
 import { PUT as putSettings } from "./route";
 
@@ -106,7 +106,7 @@ describe("Appearance settings — API save → root layout render", () => {
     const res = await putSettings(
       jsonRequest("/api/admin/settings", "PUT", {
         theme: {
-          preset: "abyss",
+          preset: "broadsheet",
           accent: "#0f6d86",
           radius: "rounded",
           headingFont: "sans",
@@ -120,7 +120,7 @@ describe("Appearance settings — API save → root layout render", () => {
       expect.objectContaining({
         title: "Ansora", // untouched fields keep their schema defaults
         theme: {
-          preset: "abyss",
+          preset: "broadsheet",
           accent: "#0f6d86",
           radius: "rounded",
           headingFont: "sans",
@@ -152,7 +152,7 @@ describe("Appearance settings — API save → root layout render", () => {
     await putSettings(
       jsonRequest("/api/admin/settings", "PUT", {
         theme: {
-          preset: "abyss",
+          preset: "broadsheet",
           accent: "#0f6d86",
           radius: "rounded",
           headingFont: "sans",
@@ -171,10 +171,10 @@ describe("Appearance settings — API save → root layout render", () => {
     // Precomputed: mix("#0f6d86", "#ffffff", 0.82) → #d4e5e9
     expect(html).toContain("--brand-soft:#d4e5e9");
     // …the ocean preset's paper in light mode…
-    expect(html).toContain(`--paper:${THEME_PRESETS.abyss.light.paper}`);
+    expect(html).toContain(`--paper:${THEME_PRESETS.broadsheet.light.paper}`);
     // …a dark-mode block with the ocean dark palette…
     expect(html).toContain("html.dark{");
-    expect(html).toContain(`--paper:${THEME_PRESETS.abyss.dark.paper}`);
+    expect(html).toContain(`--paper:${THEME_PRESETS.broadsheet.dark.paper}`);
     // …the rounded radius scale…
     expect(html).toContain("--radius-2xl:1.5rem");
     // …and sans headings.
@@ -185,17 +185,17 @@ describe("Appearance settings — API save → root layout render", () => {
     await authed();
     await putSettings(
       jsonRequest("/api/admin/settings", "PUT", {
-        theme: { preset: "abyss", accent: "" },
+        theme: { preset: "broadsheet", accent: "" },
       })
     );
 
     const html = await renderRootLayout();
 
     // No custom accent → resolveTheme returns the preset's palette directly.
-    expect(html).toContain(`--brand:${THEME_PRESETS.abyss.light.brand}`);
-    expect(html).toContain(`--brand-strong:${THEME_PRESETS.abyss.light.brandStrong}`);
-    expect(html).toContain(`--brand-soft:${THEME_PRESETS.abyss.light.brandSoft}`);
-    expect(html).toContain(`--paper:${THEME_PRESETS.abyss.light.paper}`);
+    expect(html).toContain(`--brand:${THEME_PRESETS.broadsheet.light.brand}`);
+    expect(html).toContain(`--brand-strong:${THEME_PRESETS.broadsheet.light.brandStrong}`);
+    expect(html).toContain(`--brand-soft:${THEME_PRESETS.broadsheet.light.brandSoft}`);
+    expect(html).toContain(`--paper:${THEME_PRESETS.broadsheet.light.paper}`);
   });
 
   it("renders the midnight preset's dark mood with gold accent", async () => {
@@ -203,7 +203,7 @@ describe("Appearance settings — API save → root layout render", () => {
     await putSettings(
       jsonRequest("/api/admin/settings", "PUT", {
         theme: {
-          preset: "noir",
+          preset: "nocturne",
           accent: "#d4a017",
           radius: "sharp",
           headingFont: "sans",
@@ -214,10 +214,13 @@ describe("Appearance settings — API save → root layout render", () => {
     const html = await renderRootLayout();
 
     // Preset's dark paper…
-    expect(html).toContain(`--paper:${THEME_PRESETS.noir.dark.paper}`);
-    expect(html).toContain(`--surface:${THEME_PRESETS.noir.dark.surface}`);
-    // …custom gold accent…
-    expect(html).toContain("--brand:#d4a017");
+    expect(html).toContain(`--paper:${THEME_PRESETS.nocturne.dark.paper}`);
+    expect(html).toContain(`--surface:${THEME_PRESETS.nocturne.dark.surface}`);
+    // Nocturne is a dark-only voice, so the root slot carries the *dark*
+    // palette too — the custom gold accent arrives brightened for night
+    // paper, per resolveTheme, instead of verbatim.
+    const nightBrand = mix("#d4a017", "#ffffff", 0.25);
+    expect(html).toContain(`--brand:${nightBrand}`);
     // …sharp radius (the smallest scale)…
     expect(html).toContain("--radius-2xl:0.5rem");
     // …and sans headings.
@@ -231,8 +234,8 @@ describe("Appearance settings — API save → root layout render", () => {
     const html = await renderRootLayout();
 
     expect(html).toContain("html:root{");
-    expect(html).toContain(`--brand:${THEME_PRESETS.amberglow.light.brand}`);
-    expect(html).toContain(`--paper:${THEME_PRESETS.amberglow.light.paper}`);
+    expect(html).toContain(`--brand:${THEME_PRESETS.inkline.light.brand}`);
+    expect(html).toContain(`--paper:${THEME_PRESETS.inkline.light.paper}`);
     expect(html).toContain("--font-serif:var(--font-fraunces)");
     expect(html).toContain("--radius-2xl:1rem"); // "soft" is the default scale
   });

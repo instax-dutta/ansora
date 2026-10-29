@@ -116,7 +116,7 @@ export default async function TagPage({
         <span className="text-ink">{tag}</span>
       </nav>
 
-      <h1 className="mt-3 font-serif text-3xl font-semibold tracking-tight text-ink sm:text-4xl">
+      <h1 className="mt-3 font-display text-3xl tracking-display text-ink sm:text-4xl">
         Posts tagged &ldquo;{tag}&rdquo;
       </h1>
       <p className="mt-3 text-ink-muted">

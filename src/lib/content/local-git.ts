@@ -22,7 +22,7 @@ import {
   normalizeFrontmatter,
   normalizeFrontmatterLoose,
   serializeSiteConfig,
-  siteConfigSchema,
+  siteConfigReadSchema,
 } from "./types";
 
 export class LocalGitAdapter implements ContentAdapter {
@@ -168,7 +168,7 @@ export class LocalGitAdapter implements ContentAdapter {
       return DEFAULT_SITE_CONFIG;
     }
     try {
-      return siteConfigSchema.parse(JSON.parse(raw));
+      return siteConfigReadSchema.parse(JSON.parse(raw));
     } catch {
       return DEFAULT_SITE_CONFIG;
     }

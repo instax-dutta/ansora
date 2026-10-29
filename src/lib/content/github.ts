@@ -32,7 +32,7 @@ import {
   normalizeFrontmatter,
   normalizeFrontmatterLoose,
   serializeSiteConfig,
-  siteConfigSchema,
+  siteConfigReadSchema,
 } from "./types";
 
 interface GitHubAdapterOptions {
@@ -417,7 +417,7 @@ export class GitHubApiAdapter implements ContentAdapter {
       return DEFAULT_SITE_CONFIG;
     }
     try {
-      const config = siteConfigSchema.parse(JSON.parse(raw));
+      const config = siteConfigReadSchema.parse(JSON.parse(raw));
       this.configCache.set("config", config);
       return config;
     } catch {

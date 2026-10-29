@@ -1,10 +1,12 @@
 import { describe, expect, it } from "vitest";
 import {
   DEFAULT_SITE_CONFIG,
+  DEFAULT_THEME_CONFIG,
   normalizeFrontmatter,
   postMetaSchema,
   serializeFrontmatter,
   serializeSiteConfig,
+  siteConfigReadSchema,
   siteConfigSchema,
 } from "./types";
 
@@ -107,7 +109,7 @@ describe("site config backward compatibility", () => {
       author: "Sam",
       defaultOgImage: "",
       social: { twitter: "", github: "https://github.com/sam", linkedin: "" },
-      theme: { preset: "amberglow", accent: "", radius: "soft", headingFont: "serif" },
+      theme: { preset: "inkline", accent: "", radius: "soft", headingFont: "serif" },
     };
     const config = siteConfigSchema.parse(legacy);
     expect(config.author).toBe("Sam");
@@ -115,7 +117,25 @@ describe("site config backward compatibility", () => {
     expect(config.authorRole).toBe("");
     // Existing keys survive untouched.
     expect(config.social.github).toBe("https://github.com/sam");
-    expect(config.theme.preset).toBe("amberglow");
+    expect(config.theme.preset).toBe("inkline");
+  });
+
+  it("degrades a preset id this version no longer curates, without resetting the site", () => {
+    // A repo written by an older Ansora carries a preset this build removed.
+    // The tolerant read schema must fall back to the default *theme* while
+    // every other setting (title, base URL, author) survives — the whole-config
+    // fallback would otherwise hand the author an empty-looking site.
+    const legacy = {
+      title: "Still Here",
+      description: "Words.",
+      baseUrl: "https://blog.example.com",
+      author: "Sam",
+      theme: { preset: "raku", accent: "", radius: "soft", headingFont: "serif" },
+    };
+    const config = siteConfigReadSchema.parse(legacy);
+    expect(config.title).toBe("Still Here");
+    expect(config.author).toBe("Sam");
+    expect(config.theme.preset).toBe(DEFAULT_THEME_CONFIG.preset);
   });
 
   it("keeps the exported default config valid against the schema", () => {
@@ -137,7 +157,7 @@ describe("analytics settings are additive and ignored when unused", () => {
     author: "Sam",
     defaultOgImage: "",
     social: { twitter: "", github: "", linkedin: "" },
-    theme: { preset: "abyss", accent: "#336699", radius: "soft", headingFont: "serif" },
+    theme: { preset: "broadsheet", accent: "#336699", radius: "soft", headingFont: "serif" },
   };
 
   it("parses an old config with analytics disabled and the original theme intact", () => {
@@ -149,7 +169,7 @@ describe("analytics settings are additive and ignored when unused", () => {
       baseUrl: "",
       reportBaseUrl: "",
     });
-    expect(config.theme.preset).toBe("abyss");
+    expect(config.theme.preset).toBe("broadsheet");
     expect(config.title).toBe("My Blog");
   });
 
@@ -181,7 +201,7 @@ describe("analytics settings are additive and ignored when unused", () => {
       provider: "umami",
       websiteId: "8f2c",
     });
-    expect(roundTripped.theme.preset).toBe("abyss");
+    expect(roundTripped.theme.preset).toBe("broadsheet");
   });
 
   it("tolerates a malformed analytics URL instead of resetting the whole site config", () => {
@@ -193,7 +213,7 @@ describe("analytics settings are additive and ignored when unused", () => {
       analytics: { enabled: true, provider: "umami", baseUrl: "not a url" },
     });
     expect(config.baseUrl).toBe("https://blog.example.com");
-    expect(config.theme.preset).toBe("abyss");
+    expect(config.theme.preset).toBe("broadsheet");
     expect(config.analytics.baseUrl).toBe("not a url");
   });
 
