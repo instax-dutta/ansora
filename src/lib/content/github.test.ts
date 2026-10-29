@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { GitHubApiAdapter } from "./github";
 import { DEFAULT_SITE_CONFIG } from "./types";
 
@@ -34,6 +34,13 @@ const mocks = vi.hoisted(() => ({
   createOrUpdateFileContents: vi.fn<(args: PutArgs) => Promise<unknown>>(),
   deleteFile: vi.fn<(args: DeleteArgs) => Promise<unknown>>(),
   getTree: vi.fn<(args: GetTreeArgs) => Promise<unknown>>(),
+  octokitOptions: [] as unknown[],
+  fetch: vi.fn<
+    (
+      url: string,
+      init?: unknown
+    ) => Promise<{ ok: boolean; status: number; text: () => Promise<string> }>
+  >(),
 }));
 
 vi.mock("octokit", () => ({
@@ -46,6 +53,9 @@ vi.mock("octokit", () => ({
       },
       git: { getTree: mocks.getTree },
     };
+    constructor(options: unknown) {
+      mocks.octokitOptions.push(options);
+    }
   },
 }));
 
@@ -57,6 +67,16 @@ function file(markdown: string, sha = "sha-1") {
       sha,
     },
   };
+}
+
+/** A raw.githubusercontent.com response holding one file's text. */
+function raw(text: string) {
+  return { ok: true, status: 200, text: async () => text };
+}
+
+/** The repo path inside a raw CDN url, e.g. "content/posts/a.md". */
+function rawPath(url: string): string {
+  return url.split("/main/")[1] ?? url;
 }
 
 const OPTIONS = {
@@ -74,9 +94,15 @@ function makeAdapter(): GitHubApiAdapter {
 describe("GitHubApiAdapter", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.stubGlobal("fetch", mocks.fetch);
     // Defaults: files are missing and the repo tree is empty.
     mocks.getContent.mockRejectedValue({ status: 404 });
     mocks.getTree.mockResolvedValue({ data: { tree: [] } });
+    mocks.fetch.mockResolvedValue({ ok: false, status: 404, text: async () => "" });
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
   });
 
   it("validates the repo format at construction", () => {
@@ -85,8 +111,19 @@ describe("GitHubApiAdapter", () => {
     ).toThrow(/owner\/repo/);
   });
 
+  it("never lets octokit sleep until the rate limit resets", () => {
+    makeAdapter();
+
+    // Octokit's throttling plugin sleeps *inside* the request until
+    // `x-ratelimit-reset` — up to an hour — which blows every page build
+    // timeout instead of failing fast.
+    expect(mocks.octokitOptions).toContainEqual(
+      expect.objectContaining({ throttle: { enabled: false } })
+    );
+  });
+
   describe("reads", () => {
-    it("parses a post from the Contents API and caches it", async () => {
+    it("parses a post from the raw CDN and caches it", async () => {
       const md = [
         "---",
         "title: Hello",
@@ -97,7 +134,7 @@ describe("GitHubApiAdapter", () => {
         "",
         "Body here.",
       ].join("\n");
-      mocks.getContent.mockResolvedValue(file(md, "sha-abc"));
+      mocks.fetch.mockResolvedValue(raw(md));
 
       const adapter = makeAdapter();
       const post = await adapter.getPost("hello");
@@ -108,17 +145,49 @@ describe("GitHubApiAdapter", () => {
       // file was written, so compare trimmed).
       expect(post?.content.trim()).toBe("Body here.");
       expect(post?.fileName).toBe("hello.md");
-      expect(mocks.getContent).toHaveBeenCalledWith(
-        expect.objectContaining({ path: "content/posts/hello.md", ref: "main" })
+      expect(mocks.fetch).toHaveBeenCalledWith(
+        "https://raw.githubusercontent.com/acme/content/main/content/posts/hello.md",
+        expect.objectContaining({
+          headers: expect.objectContaining({ authorization: "token test-token" }),
+        })
       );
 
-      // Second read is served from the TTL cache — no extra API call.
+      // Second read is served from the TTL cache — no extra request.
       await adapter.getPost("hello");
-      expect(mocks.getContent).toHaveBeenCalledTimes(1);
+      expect(mocks.fetch).toHaveBeenCalledTimes(1);
+    });
+
+    it("reads post files from the CDN, not the rate-limited REST API", async () => {
+      mocks.getTree.mockResolvedValue({
+        data: {
+          sha: "tree-1",
+          tree: [{ path: "content/posts/a.md", type: "blob" }],
+        },
+      });
+      mocks.fetch.mockResolvedValue(raw("---\ntitle: A\n---\n"));
+
+      await makeAdapter().listPosts();
+
+      // The REST Contents API is per-user rate limited (5000/hour shared by
+      // every token that user owns); the read path must not spend it.
+      expect(mocks.getContent).not.toHaveBeenCalled();
+      expect(mocks.fetch).toHaveBeenCalledTimes(1);
     });
 
     it("returns null for a missing post", async () => {
       expect(await makeAdapter().getPost("missing")).toBeNull();
+    });
+
+    it("throws when every post file fails, so a failure is not an empty blog", async () => {
+      mocks.getTree.mockResolvedValue({
+        data: {
+          sha: "tree-1",
+          tree: [{ path: "content/posts/a.md", type: "blob" }],
+        },
+      });
+      mocks.fetch.mockRejectedValue(new Error("network down"));
+
+      await expect(makeAdapter().listPosts()).rejects.toThrow(/unreachable/);
     });
 
     it("lists only .md posts under the posts path, newest first", async () => {
@@ -134,12 +203,12 @@ describe("GitHubApiAdapter", () => {
           ],
         },
       });
-      mocks.getContent.mockImplementation(async ({ path }) =>
-        file(
+      mocks.fetch.mockImplementation(async (url) =>
+        raw(
           [
             "---",
-            `title: ${path}`,
-            `date: ${path.endsWith("a.md") ? "2026-02-01" : "2025-01-01"}`,
+            `title: ${rawPath(url)}`,
+            `date: ${url.endsWith("a.md") ? "2026-02-01" : "2025-01-01"}`,
             "---",
             "",
             "x",
@@ -161,7 +230,7 @@ describe("GitHubApiAdapter", () => {
       // the cache when the repository tree SHA is unchanged.
       await adapter.listPosts();
       expect(mocks.getTree).toHaveBeenCalledTimes(2);
-      expect(mocks.getContent).toHaveBeenCalledTimes(3);
+      expect(mocks.fetch).toHaveBeenCalledTimes(3);
     });
 
     it("refreshes the list when the repository tree changes", async () => {
@@ -181,16 +250,11 @@ describe("GitHubApiAdapter", () => {
             ],
           },
         });
-      mocks.getContent.mockImplementation(async ({ path }) =>
-        file(
-          [
-            "---",
-            `title: ${path}`,
-            "date: 2026-02-01",
-            "---",
-            "",
-            "x",
-          ].join("\n")
+      mocks.fetch.mockImplementation(async (url) =>
+        raw(
+          ["---", `title: ${rawPath(url)}`, "date: 2026-02-01", "---", "", "x"].join(
+            "\n"
+          )
         )
       );
 
@@ -215,19 +279,17 @@ describe("GitHubApiAdapter", () => {
     });
 
     it("parses site config and falls back to defaults", async () => {
-      mocks.getContent.mockResolvedValue(
-        file(JSON.stringify({ title: "My Blog" }), "sha-c")
-      );
+      mocks.fetch.mockResolvedValue(raw(JSON.stringify({ title: "My Blog" })));
       expect((await makeAdapter().getSiteConfig()).title).toBe("My Blog");
 
       // Missing file → defaults.
-      mocks.getContent.mockRejectedValue({ status: 404 });
+      mocks.fetch.mockResolvedValue({ ok: false, status: 404, text: async () => "" });
       expect((await makeAdapter().getSiteConfig()).title).toBe(
         DEFAULT_SITE_CONFIG.title
       );
 
       // Corrupt JSON → defaults.
-      mocks.getContent.mockResolvedValue(file("{not json", "sha-c"));
+      mocks.fetch.mockResolvedValue(raw("{not json"));
       expect((await makeAdapter().getSiteConfig()).title).toBe(
         DEFAULT_SITE_CONFIG.title
       );

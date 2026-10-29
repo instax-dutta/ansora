@@ -11,7 +11,7 @@ All non-UI logic: content adapters, auth, markdown pipeline, SEO/AEO scoring, en
 - `site-config.ts` — `getSiteConfig()` with 30 s TTL; `SITE_URL` seeds `baseUrl` until changed in admin
 - `seo/` — the AI-search layer → see `seo/AGENTS.md`
 - `utils.ts` — slugify, `tagSlug`/`resolveTagFromSlug`, dates, word counts, escapeXml, stripMarkdown, truncate (pure, imported by client code)
-- `content/concurrency.ts` — `mapWithConcurrency`, the bounded-parallelism helper used by the GitHub adapter at width 16
+- `content/concurrency.ts` — `mapWithConcurrency`, the bounded-parallelism helper used by the GitHub adapter at width 8
 - `analytics/` — optional content-performance reporting (provider adapter, path→post mapping, cached aggregate reads, tracker policy) → see `analytics/AGENTS.md`
 
 ## Local Contracts
