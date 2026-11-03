@@ -25,7 +25,7 @@ import { getSiteConfig } from "@/lib/site-config";
  * the content credentials would otherwise freeze a stale `Host:` and
  * `Sitemap:` line — pointing at localhost — for the life of the deployment.
  */
-export const revalidate = 300;
+export const revalidate = 3600;
 
 export default async function robots(): Promise<MetadataRoute.Robots> {
   const config = await getSiteConfig();

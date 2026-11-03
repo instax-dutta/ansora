@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSession, isCrossOrigin } from "@/lib/auth/session";
 import { getAdapter } from "@/lib/content";
 import { siteConfigSchema } from "@/lib/content/types";
+import { revalidatePublicSurfaces } from "@/lib/revalidate";
 
 export async function PUT(request: NextRequest) {
   if (isCrossOrigin(request)) {
@@ -23,6 +24,7 @@ export async function PUT(request: NextRequest) {
       );
     }
     await getAdapter().saveSiteConfig(parsed.data);
+    revalidatePublicSurfaces();
     return NextResponse.json({ ok: true, config: parsed.data });
   } catch (err) {
     console.error("Save settings failed:", err);

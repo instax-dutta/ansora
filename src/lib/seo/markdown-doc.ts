@@ -15,7 +15,7 @@ import { postUrl } from "./jsonld";
 
 const MARKDOWN_HEADERS = {
   "Content-Type": "text/markdown; charset=utf-8",
-  "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600",
+  "Cache-Control": "public, s-maxage=3600, stale-while-revalidate=3600",
   // The HTML route is the canonical representation; this mirror must never
   // compete with it in the index.
   "X-Robots-Tag": "noindex, follow",

@@ -8,10 +8,7 @@ import rehypeAutolinkHeadings from "rehype-autolink-headings";
 import rehypePrettyCode from "rehype-pretty-code";
 import rehypeSlug from "rehype-slug";
 import remarkGfm from "remark-gfm";
-import remarkParse from "remark-parse";
-import remarkRehype from "remark-rehype";
 import type { PluggableList } from "unified";
-import { unified } from "unified";
 
 /** Shared rehype-pretty-code options (Shiki highlighting). */
 export const prettyCodeOptions = {
@@ -53,10 +50,15 @@ interface HastNode {
 
 function nodeText(node: HastNode): string {
   if (node.type === "text") return node.value ?? "";
+  // Skip decorative subtrees. rehype-autolink-headings appends an
+  // aria-hidden "#" anchor inside every heading; without this the table of
+  // contents would read "Heading#" instead of "Heading".
+  const hidden = node.properties?.["aria-hidden"];
+  if (hidden === true || hidden === "true") return "";
   return (node.children ?? []).map(nodeText).join("");
 }
 
-function collectHeadings(node: HastNode, items: TocItem[]): void {
+export function collectHeadings(node: HastNode, items: TocItem[]): void {
   if (node.type === "element") {
     if (node.tagName === "h2" || node.tagName === "h3") {
       items.push({
@@ -67,27 +69,6 @@ function collectHeadings(node: HastNode, items: TocItem[]): void {
     }
   }
   for (const child of node.children ?? []) collectHeadings(child, items);
-}
-
-/**
- * Extract h2/h3 headings (with the same ids rehype-slug generates at render
- * time) so the post page can build a table of contents.
- */
-export async function extractToc(markdown: string): Promise<TocItem[]> {
-  const items: TocItem[] = [];
-  const processor = unified()
-    .use(remarkParse)
-    .use(remarkGfm)
-    .use(remarkRehype)
-    .use(rehypeSlug)
-    .use(() => (tree: HastNode) => collectHeadings(tree, items)) as unknown as {
-    parse: (input: string) => HastNode;
-    run: (tree: HastNode) => Promise<HastNode>;
-  };
-
-  const tree = processor.parse(markdown);
-  await processor.run(tree);
-  return items;
 }
 
 export interface Heading {

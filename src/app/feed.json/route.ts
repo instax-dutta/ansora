@@ -6,6 +6,17 @@ import { getSiteConfig } from "@/lib/site-config";
 import { stripMarkdown } from "@/lib/utils";
 
 /**
+ * Prerendered like a page. Route handlers are dynamic by default, so these
+ * used to run on every cache miss; as static output they cost no function
+ * time and are served from the CDN. The one-hour revalidation is a safety net
+ * for a build that ran without content credentials — admin saves invalidate
+ * them on demand (see lib/revalidate.ts).
+ */
+export const dynamic = "force-static";
+export const revalidate = 3600;
+
+
+/**
  * JSON Feed 1.1 (https://jsonfeed.org/version/1.1).
  *
  * Complements RSS rather than replacing it. Items carry `content_text` — the
@@ -60,7 +71,7 @@ export async function GET() {
   return new Response(JSON.stringify(feed, null, 2), {
     headers: {
       "Content-Type": "application/feed+json; charset=utf-8",
-      "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600",
+      "Cache-Control": "public, s-maxage=3600, stale-while-revalidate=3600",
     },
   });
 }

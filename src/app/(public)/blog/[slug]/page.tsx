@@ -8,14 +8,13 @@ import { Toc } from "@/components/Toc";
 import { getAdapter, safeListPosts } from "@/lib/content";
 import { postNeighbours, relatedPosts } from "@/lib/content/related";
 import type { SourceItem } from "@/lib/content/types";
-import { extractToc } from "@/lib/markdown/pipeline";
-import { renderMarkdown } from "@/lib/markdown/render";
+import { renderMarkdown, renderMarkdownWithToc } from "@/lib/markdown/render";
 import { buildPostGraph, postUrl } from "@/lib/seo/jsonld";
 import { withFeeds } from "@/lib/seo/metadata";
 import { getSiteConfig } from "@/lib/site-config";
 import { countWords, formatDate, readingTimeMinutes } from "@/lib/utils";
 
-export const revalidate = 300;
+export const revalidate = 3600;
 export const dynamicParams = true;
 
 /** Build-time SSG for self-hosted builds; ISR-on-demand for serverless. */
@@ -124,18 +123,16 @@ export default async function BlogPostPage({
   if (!post || !post.meta.published) notFound();
 
   const { meta, content } = post;
-  const [bodyHtml, toc] = await Promise.all([
-    renderMarkdown(content),
-    extractToc(content),
-  ]);
+  // One parse produces both the HTML and the table of contents.
+  const { html: bodyHtml, toc } = await renderMarkdownWithToc(content);
   const faqItems = meta.faq.filter((f) => f.question);
+  const takeaways = meta.takeaways.filter((t) => t.trim());
+  // One render for the whole list instead of one per bullet.
   const [faqAnswers, takeawaysHtml] = await Promise.all([
     Promise.all(faqItems.map((f) => renderMarkdown(f.answer))),
-    Promise.all(
-      meta.takeaways
-        .filter((t) => t.trim())
-        .map((t) => renderMarkdown(`- ${t}`))
-    ),
+    takeaways.length > 0
+      ? renderMarkdown(takeaways.map((t) => `- ${t}`).join("\n"))
+      : Promise.resolve(""),
   ]);
   const wordCount = countWords(content);
   const minutes = readingTimeMinutes(content);
@@ -246,7 +243,7 @@ export default async function BlogPostPage({
             </section>
           )}
 
-          {meta.takeaways.some((t) => t.trim()) && (
+          {takeaways.length > 0 && (
             <section
               aria-labelledby="takeaways-heading"
               className="mb-10 rounded-2xl border border-line bg-surface-soft/50 p-5"
@@ -258,9 +255,7 @@ export default async function BlogPostPage({
                 Key takeaways
               </h2>
               <div className="text-[1rem] leading-7 text-ink [&_ul]:my-0 [&_li]:my-1">
-                {takeawaysHtml.map((html, i) => (
-                  <ProseHtml key={i} html={html} className="contents" />
-                ))}
+                <ProseHtml html={takeawaysHtml} className="contents" />
               </div>
             </section>
           )}

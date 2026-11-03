@@ -4,7 +4,7 @@
 Shared public components and admin-panel components (editor, score panel, image dialog, settings form, posts table, …).
 
 ## Ownership
-- Public site: `Header.tsx`, `Footer.tsx`, `PostCard.tsx`, `Pagination.tsx`, `ProseHtml.tsx`, `Toc.tsx`, `ThemeToggle.tsx`, `JsonLd.tsx`, `TagLinks.tsx`, `SearchBox.tsx`
+- Public site: `Header.tsx`, `Footer.tsx`, `PostCard.tsx`, `HomePosts.tsx`, `Pagination.tsx`, `ProseHtml.tsx`, `Toc.tsx`, `ThemeToggle.tsx`, `JsonLd.tsx`, `TagLinks.tsx`, `SearchBox.tsx`
 - Admin panel: `admin/` — `PostEditor.tsx`, `MarkdownPreview.tsx`, `SettingsForm.tsx`, `ScorePanel.tsx`, `ShortcutPanel.tsx`, `ImageDialog.tsx`, `PostsTable.tsx`, `LoginForm.tsx`, `AdminHeader.tsx` (nav order is Dashboard, Posts, New post, Analytics, Settings — keep Analytics between Posts and Settings)
 - Analytics: `AnalyticsScript.tsx` (public, opt-in tracker) and `admin/analytics/` — `AnalyticsDashboard.tsx` (fetch + states), `AnalyticsOverview.tsx` (KPIs, trend, skeleton), `DateRangePicker.tsx`, `TrendChart.tsx`, `TopContentTable.tsx`, `SourceBreakdown.tsx`, `OpportunityList.tsx`, `PostPerformancePanel.tsx`, `AnalyticsSetupCard.tsx`, `format.ts`
 - `admin/MarkdownPreview.tsx` renders through `POST /api/admin/preview` (the shared server pipeline) — do NOT replace it with react-markdown; its synchronous `runSync` cannot host the async Shiki plugin chain (see `lib/markdown/AGENTS.md`).
@@ -15,7 +15,9 @@ Shared public components and admin-panel components (editor, score panel, image 
 - Accessibility: labeled inputs, accessible names, WCAG AA contrast, visible focus, `prefers-reduced-motion` respected (existing `animate-*` utilities gate on it).
 - **All JSON-LD goes through `<JsonLd>`** (`components/JsonLd.tsx`), never a hand-rolled `<script dangerouslySetInnerHTML>` with raw `JSON.stringify`.
 - **All tag links go through `<TagLinks>` or `tagSlug()`** so URLs stay normalized while display text stays verbatim. `PostCard.tsx` must not interpolate a raw tag into a href.
-- `Pagination.tsx` emits `<link rel="prev">` / `<link rel="next">` as part of its fragment. Do not move that into a page — the pagination graph belongs to the component that knows the page count.
+- `Pagination.tsx` emits `<link rel="prev">` / `<link rel="next">` as part of its fragment. Do not move that into a page — the pagination graph belongs to the component that knows the page count. `hardNavigation` renders real anchors; only the home page sets it, because that page is static and reads `?page` in the browser.
+- **`HomePosts.tsx` exists so `/` can stay static.** It reads the page number with `useSyncExternalStore` (never `useSearchParams`, which would replace the static first page with a Suspense fallback and hide every post from crawlers), keeps the server-rendered page 1 as children, and hides it when a later page is requested. Page 1 must remain in the static HTML.
+- `PostCard` accepts `PostCardData` (a narrow `Pick` of `PostMeta`), so listing pages can pass slim card data to the client without shipping FAQ/sources/SEO blocks.
 - `SearchBox.tsx` fetches `/search-index.json` lazily on first focus so ordinary visitors never pay for it. Keep it dependency-free and client-only; the index route is built from the same `isIndexable()` set as the sitemap, so search can never surface a draft.
 - `Toc.tsx` has a `variant` prop: `card` for the desktop sidebar, `embedded` for the mobile `<details>` disclosure (the caller supplies the container). Do not delete `embedded` — without it every phone and tablet reader loses the outline, since the sidebar is `hidden lg:block`.
 - `PostEditor.tsx` requires a `config: SiteConfig` prop and accepts an optional `siblingPosts: PostMeta[]` (for the SERP/social previews). `PostEditor`'s `BLANK_META` must stay in sync with `postMetaSchema` — a missing field is a type error, which is the intended guard.

@@ -4,8 +4,8 @@
 The **single** markdown rendering pipeline shared by the public site and the editor preview, plus the two scorers: traditional on-page SEO and AI citability.
 
 ## Ownership
-- `pipeline.ts` — shared remark/rehype plugin chain (`remark-gfm`, `rehype-slug`, `rehype-pretty-code`, `rehype-autolink-headings`) + `extractToc` + `scanHeadings`
-- `render.ts` — server-side `unified` → `rehype-stringify` + a link/image sanitization pass (`SAFE_URL` neutralizes `javascript:`/`data:` URLs)
+- `pipeline.ts` — shared remark/rehype plugin chain (`remark-gfm`, `rehype-slug`, `rehype-pretty-code`, `rehype-autolink-headings`) + `collectHeadings` + `scanHeadings`
+- `render.ts` — server-side `unified` → `rehype-stringify` + a link/image sanitization pass (`SAFE_URL` neutralizes `javascript:`/`data:` URLs); `renderMarkdownWithToc` returns HTML **and** the heading outline from one parse
 - `seo-score.ts` — 0–100 traditional on-page SEO score with a per-check checklist (+ `seo-score.fixtures.ts`)
 - `aeo-score.ts` — 0–100 AI **citability** score; the GEO instrument (+ `aeo-score.test.ts`)
 - `overlap.ts` — cross-post checks: `findCannibalization` (shared focus keyword / title overlap), `findOrphanWarning` (published post with no tags can never appear in a peer's related list), `monthsSince` (freshness; silent under 30 days so the dashboard badge stays meaningful)
@@ -14,6 +14,7 @@ The **single** markdown rendering pipeline shared by the public site and the edi
 - **One pipeline for both renderers** — the editor preview renders through `render.ts` via `POST /api/admin/preview` (`src/components/admin/MarkdownPreview.tsx` debounces calls), so preview equals public render **by construction**. Never create a second rendering path.
 - **Do not reintroduce react-markdown for the preview.** It executes its unified pipeline synchronously (`runSync`), which is incompatible with async plugins — `rehype-pretty-code`/Shiki always finishes async, which 500'd every edit page (SSR and browser alike). Any client-side markdown rendering must go through the server pipeline.
 - `rehype-stringify` does not sanitize — `render.ts`'s post-pass is the safety net for links/images. Keep it.
+- **Post pages must use `renderMarkdownWithToc`, not `renderMarkdown` + `extractToc`.** Two calls parse the document twice; the combined call collects headings during the render pass and carries them on the vfile, which is also what keeps the shared processor safe for concurrent requests. `collectHeadings` is shared by the renderer; the old separate `extractToc` pass was removed.
 - Shiki theme for code blocks: `everforest-dark` (reads well in both site themes).
 - **The two scorers are deliberately different instruments and must not be merged.** `seo-score.ts` asks "will this rank in classic search?"; `aeo-score.ts` asks "will an answer engine quote this?". Keyword placement is worth little to a model and keyword stuffing actively *hurts* AI visibility, so a high SEO score does not imply a citable post. The editor shows both, side by side.
 - **`aeo-score.ts` must stay pure, synchronous and dependency-free.** It runs on every keystroke in the browser; a network call or an LLM there would make the number untrustworthy. Regexes and counts only.

@@ -22,7 +22,7 @@ import { getSiteConfig } from "@/lib/site-config";
  * still parses, it just stops advertising anything. Re-validating on the same
  * 300s cadence as the public pages means a bad build heals on its own.
  */
-export const revalidate = 300;
+export const revalidate = 3600;
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // Degrade to a minimal sitemap if the content adapter is unreachable

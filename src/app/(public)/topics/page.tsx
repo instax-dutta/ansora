@@ -11,7 +11,7 @@ import { MIN_POSTS_FOR_TAG_INDEX } from "@/lib/seo/publish";
 import { getSiteConfig } from "@/lib/site-config";
 import { tagSlug } from "@/lib/utils";
 
-export const revalidate = 300;
+export const revalidate = 3600;
 
 export async function generateMetadata(): Promise<Metadata> {
   const config = await getSiteConfig();

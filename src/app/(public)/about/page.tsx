@@ -5,7 +5,7 @@ import { aboutUrl, buildAboutGraph } from "@/lib/seo/jsonld";
 import { withFeeds } from "@/lib/seo/metadata";
 import { getSiteConfig } from "@/lib/site-config";
 
-export const revalidate = 300;
+export const revalidate = 3600;
 
 export async function generateMetadata(): Promise<Metadata> {
   const config = await getSiteConfig();

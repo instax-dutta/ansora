@@ -9,6 +9,7 @@ All non-UI logic: content adapters, auth, markdown pipeline, SEO/AEO scoring, en
 - `auth/session.ts` — JWT (jose) + bcrypt credentials + login rate limiting (single file)
 - `theme.ts` — theme "voices" (8 curated typographic identities, some dual-mode, some dark-only) + per-preset faces (density/body/display/chrome/stroke) + `buildThemeCss`
 - `site-config.ts` — `getSiteConfig()` with 30 s TTL; `SITE_URL` seeds `baseUrl` until changed in admin
+- `revalidate.ts` — `revalidatePublicSurfaces()`: on-demand invalidation of every public page and machine route after a content/settings save (best-effort, never fails the save)
 - `seo/` — the AI-search layer → see `seo/AGENTS.md`
 - `utils.ts` — slugify, `tagSlug`/`resolveTagFromSlug`, dates, word counts, escapeXml, stripMarkdown, truncate (pure, imported by client code)
 - `content/concurrency.ts` — `mapWithConcurrency`, the bounded-parallelism helper used by the GitHub adapter at width 8
@@ -19,6 +20,7 @@ All non-UI logic: content adapters, auth, markdown pipeline, SEO/AEO scoring, en
 - `theme.ts`: palette + face hex/stacks live here and in the `globals.css` fallbacks; accent derivation is WCAG-aware (`textOn`/`contrast`); `buildThemeCss` emits `html:root`/`html.dark` custom properties (palette **and** face tokens). Single-mode voices mirror one palette into both slots and the Header hides the toggle for them.
 - `utils.ts` `tagSlug`/`resolveTagFromSlug`: tags are stored and displayed verbatim, and these are pure URL helpers. Resolution is slug-based and case/encoding-insensitive so **legacy raw-tag URLs keep working**; every tag link must go through `tagSlug()`. Never rewrite a stored tag to its slug form.
 - Caches (site-config 30 s, GitHub adapter 60 s, analytics reports 120 s) are **per-instance** — never rely on cross-instance invalidation. `invalidateSiteConfig()` exists for the one case where a write must be visible immediately (analytics settings decide which numbers the next report queries).
+- **Public pages are static-first.** They carry a long `revalidate` only as a self-heal fallback; freshness comes from `revalidatePublicSurfaces()` in the admin save paths. Never add a per-visit server render to a public route, and never make `revalidatePublicSurfaces` throw into a save.
 
 ## Work Guidance
 - Keep `utils.ts` side-effect-free and node-import-free (client code imports it).

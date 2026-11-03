@@ -10,6 +10,7 @@ import {
   PayloadError,
 } from "@/lib/content/validate";
 import { isSafeSlug } from "@/lib/content/slug";
+import { revalidatePublicSurfaces } from "@/lib/revalidate";
 
 /** Reject slugs that could never name a real post file. */
 function requireSafeSlug(slug: string): void {
@@ -64,6 +65,7 @@ export async function PUT(
       await getAdapter().deletePost(currentSlug);
     }
 
+    revalidatePublicSurfaces();
     return NextResponse.json({ ok: true, slug });
   } catch (err) {
     if (err instanceof PayloadError) {
@@ -121,6 +123,7 @@ export async function PATCH(
     }
 
     await getAdapter().savePost(slug, post.content, merged);
+    revalidatePublicSurfaces();
     return NextResponse.json({ ok: true, meta: merged });
   } catch (err) {
     console.error("Toggle publish failed:", err);
@@ -149,6 +152,7 @@ export async function DELETE(
     const { slug } = await params;
     requireSafeSlug(slug);
     await getAdapter().deletePost(slug);
+    revalidatePublicSurfaces();
     return NextResponse.json({ ok: true });
   } catch (err) {
     console.error("Delete post failed:", err);

@@ -2,7 +2,17 @@ import Link from "next/link";
 import type { PostMeta } from "@/lib/content/types";
 import { formatDate } from "@/lib/utils";
 
-export function PostCard({ post }: { post: PostMeta }) {
+/**
+ * The subset of a post a card renders. Keeping it narrow lets listing pages
+ * ship card data to the browser without the full frontmatter (FAQ, sources,
+ * SEO block), which keeps the static payload small.
+ */
+export type PostCardData = Pick<
+  PostMeta,
+  "slug" | "title" | "excerpt" | "date" | "tags" | "coverImage"
+>;
+
+export function PostCard({ post }: { post: PostCardData }) {
   return (
     <article className="group relative flex flex-col overflow-hidden rounded-2xl border-stroke border border-line bg-surface transition-all duration-200 hover:-translate-y-0.5 hover:border-line-strong hover:shadow-[0_10px_36px_-12px_rgba(79,51,20,0.25)] dark:hover:shadow-[0_10px_36px_-12px_rgba(0,0,0,0.8)]">
       {post.coverImage ? (

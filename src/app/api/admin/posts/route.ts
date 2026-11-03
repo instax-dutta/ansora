@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession, isCrossOrigin } from "@/lib/auth/session";
 import { getAdapter } from "@/lib/content";
+import { revalidatePublicSurfaces } from "@/lib/revalidate";
 import {
   assertPublishable,
   assertSlugFree,
@@ -28,6 +29,7 @@ export async function POST(request: NextRequest) {
 
     // New posts don't get an `updated` stamp — that's for edits.
     await getAdapter().savePost(slug, body, { ...meta, slug });
+    revalidatePublicSurfaces();
     return NextResponse.json({ ok: true, slug });
   } catch (err) {
     if (err instanceof PayloadError) {

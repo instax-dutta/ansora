@@ -10,9 +10,11 @@ import remarkRehype from "remark-rehype";
 import { unified } from "unified";
 import {
   autolinkOptions,
+  collectHeadings,
   prettyCodeOptions,
   remarkPlugins,
   rehypePlugins,
+  type TocItem,
 } from "./pipeline";
 
 interface HastNode {
@@ -67,6 +69,19 @@ function enrichLinksAndImages() {
   };
 }
 
+// Collects h2/h3 headings during the *same* pass that renders the HTML, so a
+// post page no longer parses its markdown twice (render + table of contents).
+// The result rides on the vfile, which keeps the shared processor stateless
+// and safe to reuse across concurrent requests.
+function collectToc() {
+  return (tree: HastNode, file: { data?: Record<string, unknown> }) => {
+    const items: TocItem[] = [];
+    collectHeadings(tree, items);
+    file.data = file.data ?? {};
+    file.data.toc = items;
+  };
+}
+
 // Note: `rehypePlugins` already includes rehypeSlug + pretty-code + autolink;
 // we list the stringify step (and the link/image post-pass) here.
 const processor = unified()
@@ -74,12 +89,24 @@ const processor = unified()
   .use(remarkPlugins)
   .use(remarkRehype)
   .use(rehypePlugins)
+  .use(collectToc)
   .use(enrichLinksAndImages)
   .use(rehypeStringify);
 
 export async function renderMarkdown(markdown: string): Promise<string> {
   const file = await processor.process(markdown);
   return String(file);
+}
+
+/** Render a post once, returning both its HTML and its table of contents. */
+export async function renderMarkdownWithToc(
+  markdown: string
+): Promise<{ html: string; toc: TocItem[] }> {
+  const file = await processor.process(markdown);
+  return {
+    html: String(file),
+    toc: ((file.data as Record<string, unknown>).toc as TocItem[] | undefined) ?? [],
+  };
 }
 
 /** Shared options re-exported for the client preview's react-markdown setup. */

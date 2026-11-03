@@ -6,6 +6,17 @@ import { getSiteConfig } from "@/lib/site-config";
 import { escapeXml, toRfc2822 } from "@/lib/utils";
 
 /**
+ * Prerendered like a page. Route handlers are dynamic by default, so these
+ * used to run on every cache miss; as static output they cost no function
+ * time and are served from the CDN. The one-hour revalidation is a safety net
+ * for a build that ran without content credentials — admin saves invalidate
+ * them on demand (see lib/revalidate.ts).
+ */
+export const dynamic = "force-static";
+export const revalidate = 3600;
+
+
+/**
  * How many recent items carry a fully rendered article body.
  *
  * Two costs stack here: fetching each body is a per-post request in serverless
@@ -103,7 +114,7 @@ ${categories}
   return new Response(xml, {
     headers: {
       "Content-Type": "application/rss+xml; charset=utf-8",
-      "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600",
+      "Cache-Control": "public, s-maxage=3600, stale-while-revalidate=3600",
     },
   });
 }

@@ -13,7 +13,7 @@ import { MIN_POSTS_FOR_TAG_INDEX } from "@/lib/seo/publish";
 import { getSiteConfig } from "@/lib/site-config";
 import { resolveTagFromSlug, tagSlug } from "@/lib/utils";
 
-export const revalidate = 300;
+export const revalidate = 3600;
 export const dynamicParams = true;
 
 /** One list read per request, shared by generateMetadata and the page body. */
