@@ -174,7 +174,7 @@ When someone saves a post in the admin editor, it commits to their content repo 
 
 Repeat for all three site/repo pairs. Now every edit triggers a rebuild (~1–2 minutes).
 
-> **Fallback:** Even without the webhook, the public pages use ISR with `revalidate = 300` seconds, so the site refreshes every 5 minutes automatically.
+> **Fallback:** Even without the webhook, public pages carry a one-hour `revalidate`, so a change still appears within an hour. With the webhook, a publish rebuilds in about a minute.
 
 ---
 
@@ -247,7 +247,7 @@ Each blog's theme is independent — changing one never affects the others.
 
 1. Log into each admin panel and confirm the Dashboard loads
 2. Create a test post, publish it, and verify:
-   - The post appears on the public blog within ~2 minutes (or 5 minutes via ISR)
+   - The post appears on the public blog after the rebuild (~1-2 minutes); without the webhook, within an hour via the fallback revalidate
    - The GitHub repo shows the new commit
    - The Netlify deploy log shows a triggered build
 3. Change the appearance in Settings, save, and verify the CSS variables update on the public site

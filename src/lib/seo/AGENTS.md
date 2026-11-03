@@ -27,7 +27,8 @@ Everything that decides how the site reads to a machine: the entity graph, the i
 - Feed/sitemap output must stay correct on degraded input: escape XML, escape CDATA terminators, and never throw when the content adapter is unreachable.
 - **A machine-facing file must never overstate its own completeness.** `/llms-full.txt` is a truncated-by-design document; its header must say how many posts carry full text versus excerpt only, and each truncated section must say so individually. A bare "N posts" claim on a capped file is a false statement in the one document whose entire value is being accurate about what it contains. `/search-index.json` follows the same rule with `total` + `truncated`.
 - **`indexableTags()` filters by indexability itself.** Do not rely on the caller pre-filtering; the name promises it, and a caller passing a raw post list would otherwise advertise tag pages whose only posts are drafts or opted out.
-- **Every bounded surface reports its bound.** RSS, JSON Feed, llms-full.txt and the search index all cap work per request. A cap that is invisible to the consumer is indistinguishable from a bug.
+- **Every bounded surface reports its bound.** RSS, JSON Feed, llms-full.txt and the search index all cap work per regeneration. A cap that is invisible to the consumer is indistinguishable from a bug.
+- **The machine routes are prerendered.** `rss.xml`, `feed.json`, `llms.txt`, `llms-full.txt`, `search-index.json`, `sitemap.xml`, `robots.txt` and `/md` are `force-static` with a 1 h fallback, and admin saves invalidate them through `revalidatePublicSurfaces()`. `markdown-doc.ts` headers use `s-maxage=3600`. `/md/[...slug]` stays dynamic on purpose because it resolves arbitrary legacy tag URLs.
 - Tag URLs are normalized on output only. Store tags verbatim (`tagSlug` lives in `utils.ts`).
 
 ## Verification

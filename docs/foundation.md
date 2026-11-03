@@ -73,7 +73,7 @@ interface ContentAdapter {
 - **`GitHubApiAdapter`** (`src/lib/content/github.ts`): octokit Contents API for writes. Updating a file requires its current **SHA** (fetch first). Treats a fresh/empty repo as empty (404 → `[]`).
   - **Reads are split by cost.** The *tree* is one REST call — it gives the file list and the freshness key (the tree SHA changes when a post changes). The *file contents* come from `raw.githubusercontent.com`, which serves the same bytes off the CDN with **no REST quota** (still token-authenticated, so a private content repo stays private). The REST API is a per-*user* budget — 5000/hour shared by every token that user owns — and listing posts needs the body of every post because frontmatter lives inside the file, so an 86-post blog cost 87 calls per listing and a Vercel build renders a dozen listing pages. That exhausted the quota, and one exhausted quota failed the whole deployment.
   - **Octokit's throttling plugin is disabled** (`throttle: { enabled: false }`). On a rate-limited response it sleeps *inside* the request until `x-ratelimit-reset` — up to an hour — which blows Next's 60 s page-build timeout and turns one exhausted quota into a build where every page times out three times over. The adapter owns its transient policy instead (one short retry), so a rate limit fails fast and degrades honestly.
-  - `listPosts()` re-reads the branch tree SHA on every call so a new content commit is visible immediately, then reuses a parsed-list cache keyed by that SHA (`3fab213`). **Do not put a persistent cache in front of it** — that reintroduces the bug that commit fixed.
+  - `listPosts()` re-reads the branch tree SHA on every call so the next render sees a new content commit, then reuses a parsed-list cache keyed by that SHA (`3fab213`). Page freshness is separate: an admin save invalidates the affected pages, a direct push rebuilds through the deploy hook, and the hourly `revalidate` is the fallback. **Do not put a persistent cache in front of it** — that reintroduces the bug that commit fixed.
   - Because frontmatter needs the file body, listing N posts costs N content reads. Those are fetched with `mapWithConcurrency(files, 8, …)` (`content/concurrency.ts`) rather than serially: the sequential version made every uncached page pay N round-trip latencies and was the dominant cost of the home page. Freshness is unaffected because only the parallelism changed.
 - **No-op guard:** if the serialized file is byte-identical to what's stored, skip the commit — in *both* adapters. Keep this when editing them.
 - **Site config** lives in `content/site.config.json` (path configurable in serverless mode) and is read/written through the same adapter.
@@ -94,7 +94,7 @@ interface ContentAdapter {
 - `render.ts` adds a hast post-pass mirroring react-markdown's `<a>`/`<img>` behavior: external links open in new tabs, images lazy-load, and **URL sanitization** (`SAFE_URL`) neutralizes `javascript:`/`data:` schemes. `rehype-stringify` does not sanitize — this pass is the safety net.
 - JSON-LD blocks embed through `serializeJsonLd()` (`src/lib/seo/jsonld.ts`), which escapes `<`/`>`/`&`/U+2028/29 so post fields can never break out of the `<script type="application/ld+json">` tag.
 - **Slug safety gate** (`src/lib/content/slug.ts`): both adapters validate every slug with `isSafeSlug()` before it becomes a file path or repo path — traversal slugs read as absent and refuse writes.
-- `extractToc` builds h2/h3 TOC with the same ids rehype-slug generates; shown for posts > 800 words with ≥ 2 headings.
+- `renderMarkdownWithToc` returns the HTML **and** the h2/h3 outline from one parse (ids match rehype-slug); the TOC shows for posts > 800 words with ≥ 2 headings.
 - `scanHeadings` is a cheap regex scan for the SEO scorer (code fences stripped first).
 
 ### 4.4 SEO / AEO / GEO surface (`src/lib/seo/`, app routes)
@@ -305,13 +305,13 @@ Never commit `.env*`. `.env.local` exists locally for serverless verification (f
 - ❌ **Don't overwrite the editor's single pipeline** — a second rendering path for the preview is a regression waiting to happen.
 - ❌ **Don't break existing content.** No frontmatter field without a default and an empty-omitting serializer; no URL change that stops resolving; no content-model change that rewrites a pre-existing post file.
 - ❌ **Don't collapse the two scorers into one number.** A high traditional SEO score does not imply a citable post.
-- ❌ **Don't add a persistent cache in front of `listPosts()`.** The tree-SHA cache exists so a content commit appears on the homepage immediately (`3fab213`). Fix latency with concurrency, not staleness.
+- ❌ **Don't add a persistent cache in front of `listPosts()`.** The tree-SHA cache exists so the next render sees a content commit (`3fab213`). Page freshness is handled by `revalidatePublicSurfaces()` and the deploy hook; fix latency with concurrency, not staleness.
 - ❌ **Don't let a read throw.** `listPosts`/`getPost` must use `normalizeFrontmatterLoose`, never the strict parser. One bad file in a loop over every post is a total outage.
 - ❌ **Don't render a degraded listing as "Nothing published yet".** It reads to an author as data loss and to a crawler as an empty site.
 - ❌ **Don't interpolate a raw error into a page.** Use `describeAdapterError()`; Octokit errors can carry auth headers.
 - ❌ **Don't block a save on advisory advice.** Cannibalization and orphan warnings are judgement calls; only genuinely broken input (a malformed `seo.canonicalUrl`, which can deindex a post) should throw.
 - ❌ **Don't let a machine-facing file overstate its completeness.** `llms-full.txt` is truncated by design; say so in the header and per section. A bare "N posts" on a capped file is a false statement in the document whose only value is being trustworthy to a reader.
-- ❌ **Don't drop `export const revalidate = 300` from `sitemap.ts` or `robots.ts`.** They become build-time bakes, and a build without content credentials then freezes an empty sitemap (or a localhost `Host:`) permanently. Verify with `npm run build` — both should show `5m`.
+- ❌ **Don't drop the `revalidate` from `sitemap.ts` or `robots.ts` (currently 3600).** Without it they become build-time bakes, and a build without content credentials then freezes an empty sitemap (or a localhost `Host:`) permanently. Verify with `npm run build` — both should show `1h`.
 - ❌ **Don't use `next/image` for cover images.** Cover URLs are arbitrary external hosts and the optimizer would need the *server* to fetch them, which breaks on air-gapped or bandwidth-capped self-hosted deploys. A raw `<img>` with `fetchPriority="high"` plus an explicit `aspect-[16/9]` gets the LCP and CLS wins with no server-side dependency.
 
 ## 10. Testing

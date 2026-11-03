@@ -128,7 +128,7 @@ updating.
    - Vercel → Project → **Settings → Git → Deploy Hooks** → create one (e.g. named `content`).
    - In your content repo: **Settings → Webhooks** → add the deploy-hook URL, content type `application/json`, event **Just the push event**.
    - Now every save in the Ansora editor (a GitHub commit) triggers a rebuild.
-4. Deploy. The public pages use ISR (`revalidate = 300s`), so even between rebuilds the site refreshes itself within 5 minutes.
+4. Deploy. Public pages are prerendered and an admin save invalidates them on the next visit; a one-hour `revalidate` is the self-heal fallback if a rebuild is missed.
 
 Environment variables for Vercel: all of those below.
 
@@ -403,8 +403,9 @@ CONTENT_DIR=$PWD/content node .next/standalone/server.js
 > Dockerfile does exactly this.
 
 The public blog reads content through the same adapter the admin writes with,
-so you can edit `content/posts/*.md` by hand and see it live immediately in
-self-hosted mode.
+so you can edit `content/posts/*.md` by hand. In self-hosted mode an admin save
+invalidates the affected pages immediately; a hand edit appears on the next
+revalidation (within an hour) or after a rebuild.
 
 ## License
 
