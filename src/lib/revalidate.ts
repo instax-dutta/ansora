@@ -12,13 +12,20 @@ import { revalidatePath } from "next/cache";
  * Best-effort on purpose: a failed invalidation must never fail the save. The
  * one-hour `revalidate` on each route is the fallback.
  */
-export function revalidatePublicSurfaces(): void {
+export function revalidatePublicSurfaces(slug?: string): void {
   for (const path of ["/", "/blog", "/tags", "/topics", "/about"]) {
     safeRevalidate(path);
   }
-  // Dynamic segments need the route pattern plus an explicit type.
+  // Sweep the dynamic routes as well. The literal paths below are the ones
+  // that matter for a publish: a path that was requested before the post
+  // existed has a cached 404, and the pattern form does not clear it.
   safeRevalidate("/blog/[slug]", "page");
   safeRevalidate("/tags/[tag]", "page");
+  safeRevalidate("/md/[...slug]", "page");
+  if (slug) {
+    safeRevalidate(`/blog/${slug}`);
+    safeRevalidate(`/md/blog/${slug}`);
+  }
 
   for (const path of [
     "/rss.xml",
