@@ -75,7 +75,7 @@ export async function loadAnalyticsContext(): Promise<AnalyticsContext> {
  */
 export async function loadPostsForMapping(): Promise<PostMeta[]> {
   try {
-    return await getAdapter().listPosts();
+    return await (await getAdapter()).listPosts();
   } catch (err) {
     console.warn("[analytics] post listing unavailable for path mapping:", err);
     return [];

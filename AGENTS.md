@@ -69,7 +69,7 @@ Default section order:
 - **No database, no external CMS.** Markdown files + git are the only state. Never introduce a DB/ORM.
 - **Single admin per deployment.** Env-var credentials only — never multi-user auth or third-party providers.
 - **No deployment-mode branching** outside `src/lib/content/index.ts` (`getAdapter`). Features must work identically in `self-hosted` and `serverless` modes.
-- **All content I/O goes through `getAdapter()`** — never read/write content files or the GitHub API directly elsewhere.
+- **All content I/O goes through `getAdapter()`** — never read/write content files or the GitHub API directly elsewhere. It is async (`await getAdapter()`) and loads only the adapter this deployment uses.
 - **Every save is a commit; no-op saves never create commits** (both adapters guard this — preserve it).
 - **A read must never be taken down by bad data in one post.** Strict frontmatter validation on writes; tolerant field-by-field parsing on reads. A failure must render as a failure, never as an empty blog. See `src/lib/content/AGENTS.md`.
 - **Drafts are private** — unpublished posts must 404 on every public route (pages, RSS, feeds, sitemap, llms.txt, `/md/*`, JSON-LD).
@@ -77,6 +77,7 @@ Default section order:
 - **Backward compatibility is a product requirement.** Ansora runs live blogs; their markdown files and URLs are in git and cannot be migrated. Content-model changes must be additive + defaulted + omitted when empty; URL changes must keep old URLs resolving. See `src/lib/content/AGENTS.md` and `src/lib/content/backward-compat.test.ts`.
 - **Analytics is opt-in and stores nothing itself.** Ansora keeps no database and no event store: pageviews are read from a configured provider through `lib/analytics`, never written to Markdown, never committed, never counted in memory. Reporting credentials live only in `ANALYTICS_API_KEY` (server-side, never `NEXT_PUBLIC_`); the tracker is emitted on public pages only, and the Content-Security-Policy origin it needs is a **build-time** input (`ANALYTICS_SCRIPT_ORIGIN`). See `src/lib/analytics/AGENTS.md`.
 - **Public routes are static-first and must stay that way.** Every public page is prerendered; freshness comes from `revalidatePublicSurfaces()` on save (plus the deploy hook), with a 1-hour `revalidate` as the fallback. Never reintroduce a per-visit server render on a public route, and never remove the invalidation call from an admin write path.
+- **A listing reads only the head of each post file.** Frontmatter is at the top, so both adapters read the first 16 KB (byte range on the GitHub CDN, positional read on disk) and fall back to the whole file only when the block does not close inside the window. Never parse a truncated frontmatter block.
 - **No plaintext secrets** — only the bcrypt `ADMIN_PASSWORD_HASH`; never log credentials or tokens.
 - **Components use theme tokens, not hex colors.** Palette hex lives only in `src/lib/theme.ts` and the `globals.css` fallbacks.
 - **SEO/AEO surface is non-negotiable** — canonical URLs, metadata, JSON-LD entity graph, RSS/JSON Feed/sitemap/robots/llms.txt/llms-full.txt, markdown content negotiation stay correct.

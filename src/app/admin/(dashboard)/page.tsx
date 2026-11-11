@@ -8,7 +8,7 @@ import { formatDate } from "@/lib/utils";
 export const dynamic = "force-dynamic";
 
 export default async function AdminDashboardPage() {
-  const adapter = getAdapter();
+  const adapter = await getAdapter();
   const [posts, config] = await Promise.all([
     adapter.listPosts(),
     getSiteConfig(),

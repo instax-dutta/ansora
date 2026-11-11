@@ -20,7 +20,27 @@ import { resolveTagFromSlug } from "@/lib/utils";
  * Reached directly it is still a normal, valid route, so agents that prefer
  * explicit paths can use them. It sends `X-Robots-Tag: noindex, follow` because
  * it duplicates the HTML route and must not compete with it.
+ *
+ * Prerendered like every other public surface: this used to be the last route
+ * that ran a function on every request, because a catch-all resolves an
+ * arbitrary path. An empty `generateStaticParams` plus `force-static` means
+ * "generate whatever is asked for, then cache it" — every existing URL
+ * (including the legacy raw-tag forms) keeps resolving, and the answer is
+ * served from the CDN instead of a function.
  */
+export const dynamic = "force-static";
+export const revalidate = 3600;
+
+/**
+ * No paths are known at build time on purpose.
+ *
+ * The mirror resolves any tag spelling, so the path set cannot be enumerated
+ * without dropping URLs that work today. Returning an empty list keeps the
+ * runtime path open; `force-static` is what caches the result.
+ */
+export function generateStaticParams() {
+  return [];
+}
 export async function GET(
   _request: Request,
   { params }: { params: Promise<{ slug: string[] }> }

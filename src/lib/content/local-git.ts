@@ -15,6 +15,10 @@ import path from "node:path";
 import matter from "gray-matter";
 import simpleGit, { type SimpleGit } from "simple-git";
 import type { ContentAdapter } from "./index";
+import {
+  FRONTMATTER_WINDOW_BYTES,
+  headHasCompleteFrontmatter,
+} from "./frontmatter";
 import { isSafeSlug } from "./slug";
 import type { Post, PostMeta, SiteConfig } from "./types";
 import {
@@ -88,6 +92,27 @@ export class LocalGitAdapter implements ContentAdapter {
 
   /* ------------------------------ Reads ---------------------------------- */
 
+  /**
+   * Read the first {@link FRONTMATTER_WINDOW_BYTES} of a file.
+   *
+   * A listing needs the frontmatter and none of the body, and frontmatter is
+   * always at the top of the file. When the block does not close inside the
+   * window the whole file is read instead, so a long frontmatter is still
+   * parsed correctly.
+   */
+  private async readHead(filePath: string): Promise<string> {
+    const handle = await fs.open(filePath, "r");
+    try {
+      const buffer = Buffer.alloc(FRONTMATTER_WINDOW_BYTES);
+      const { bytesRead } = await handle.read(buffer, 0, FRONTMATTER_WINDOW_BYTES, 0);
+      const head = buffer.toString("utf8", 0, bytesRead);
+      if (headHasCompleteFrontmatter(head)) return head;
+    } finally {
+      await handle.close();
+    }
+    return fs.readFile(filePath, "utf8");
+  }
+
   async listPosts(): Promise<PostMeta[]> {
     const entries = await fs.readdir(this.postsDir).catch(() => []);
     const posts: PostMeta[] = [];
@@ -95,7 +120,7 @@ export class LocalGitAdapter implements ContentAdapter {
     for (const entry of entries) {
       if (!entry.endsWith(".md")) continue;
       try {
-        const raw = await fs.readFile(path.join(this.postsDir, entry), "utf8");
+        const raw = await this.readHead(path.join(this.postsDir, entry));
         const { data } = matter(raw);
         posts.push(normalizeFrontmatterLoose(data as Record<string, unknown>, entry).meta);
       } catch {

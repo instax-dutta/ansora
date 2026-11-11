@@ -40,7 +40,7 @@ export async function loadRecentBodies(
 
   const deadline = Date.now() + budgetMs;
   try {
-    const adapter = getAdapter();
+    const adapter = await getAdapter();
     for (const meta of posts.slice(0, limit)) {
       // Stop before starting work we have no time to finish. Sequential rather
       // than parallel on purpose: a parallel burst cannot be abandoned
@@ -59,7 +59,7 @@ export async function loadRecentBodies(
 /** Fetch a single published post, or null when it is missing or a draft. */
 export async function loadPublishedPost(slug: string): Promise<Post | null> {
   try {
-    const post = await getAdapter().getPost(slug);
+    const post = await (await getAdapter()).getPost(slug);
     if (!post || !post.meta.published) return null;
     return post;
   } catch (err) {

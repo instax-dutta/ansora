@@ -174,6 +174,76 @@ describe("GitHubApiAdapter", () => {
       expect(mocks.fetch).toHaveBeenCalledTimes(1);
     });
 
+    it("asks for only the head of a post file when listing", async () => {
+      mocks.getTree.mockResolvedValue({
+        data: {
+          sha: "tree-1",
+          tree: [{ path: "content/posts/a.md", type: "blob" }],
+        },
+      });
+      mocks.fetch.mockResolvedValue(raw("---\ntitle: A\n---\n\nBody\n"));
+
+      const posts = await makeAdapter().listPosts();
+
+      expect(posts[0].title).toBe("A");
+      // A listing only needs frontmatter, so it asks for a byte range
+      // instead of downloading the whole body of every post.
+      expect(mocks.fetch).toHaveBeenCalledWith(
+        "https://raw.githubusercontent.com/acme/content/main/content/posts/a.md",
+        expect.objectContaining({
+          headers: expect.objectContaining({
+            range: expect.stringMatching(/^bytes=0-\d+$/),
+          }),
+        })
+      );
+    });
+
+    it("falls back to a full read when the frontmatter does not fit the window", async () => {
+      const longFrontmatter =
+        "---\ntitle: A\nfaq:\n" + "  - question: q\n".repeat(2000) + "---\n";
+      expect(longFrontmatter.length).toBeGreaterThan(16384);
+      mocks.getTree.mockResolvedValue({
+        data: {
+          sha: "tree-1",
+          tree: [{ path: "content/posts/a.md", type: "blob" }],
+        },
+      });
+      // First answer is a truncated head, second is the whole file.
+      mocks.fetch
+        .mockResolvedValueOnce(raw("---\ntitle: A\nfaq:\n"))
+        .mockResolvedValueOnce(raw(longFrontmatter));
+
+      const posts = await makeAdapter().listPosts();
+
+      expect(posts[0].title).toBe("A");
+      expect(mocks.fetch).toHaveBeenCalledTimes(2);
+      expect(mocks.fetch.mock.calls[0][1]).toEqual(
+        expect.objectContaining({
+          headers: expect.objectContaining({ range: expect.any(String) }),
+        })
+      );
+      expect(mocks.fetch.mock.calls[1][1]).toEqual(
+        expect.objectContaining({
+          headers: expect.not.objectContaining({ range: expect.any(String) }),
+        })
+      );
+    });
+
+    it("does not re-read a file that has no frontmatter", async () => {
+      mocks.getTree.mockResolvedValue({
+        data: {
+          sha: "tree-1",
+          tree: [{ path: "content/posts/a.md", type: "blob" }],
+        },
+      });
+      mocks.fetch.mockResolvedValue(raw("# Just a heading\n\nBody\n"));
+
+      const posts = await makeAdapter().listPosts();
+
+      expect(posts).toHaveLength(1);
+      expect(mocks.fetch).toHaveBeenCalledTimes(1);
+    });
+
     it("returns null for a missing post", async () => {
       expect(await makeAdapter().getPost("missing")).toBeNull();
     });

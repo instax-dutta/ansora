@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
     await assertSlugFree(slug);
 
     // New posts don't get an `updated` stamp — that's for edits.
-    await getAdapter().savePost(slug, body, { ...meta, slug });
+    await (await getAdapter()).savePost(slug, body, { ...meta, slug });
     revalidatePublicSurfaces();
     return NextResponse.json({ ok: true, slug });
   } catch (err) {

@@ -9,8 +9,6 @@
  * No other code branches on the deployment mode.
  */
 import path from "node:path";
-import { GitHubApiAdapter } from "./github";
-import { LocalGitAdapter } from "./local-git";
 import type { Post, PostMeta, SiteConfig } from "./types";
 
 export interface ContentAdapter {
@@ -26,11 +24,25 @@ export interface ContentAdapter {
   saveSiteConfig(config: SiteConfig): Promise<void>;
 }
 
-let cachedAdapter: ContentAdapter | null = null;
+/**
+ * The adapter instance, cached as a promise.
+ *
+ * Caching the promise (not the instance) means two concurrent callers share
+ * one adapter and one module load, and a failure is not cached: the next
+ * caller retries instead of inheriting a rejected promise forever.
+ */
+let cachedAdapter: Promise<ContentAdapter> | null = null;
 
-export function getAdapter(): ContentAdapter {
-  if (cachedAdapter) return cachedAdapter;
-
+/**
+ * Build the adapter for this deployment.
+ *
+ * The adapter modules are imported **dynamically**, and only the one this
+ * deployment actually uses. `octokit` and `simple-git` are heavy, and each
+ * cold serverless instance was loading both: the local-git adapter is dead
+ * weight in serverless mode and vice versa. Lazy import also keeps the
+ * content module cheap for routes that never read content at all.
+ */
+async function createAdapter(): Promise<ContentAdapter> {
   if (process.env.DEPLOYMENT_MODE === "serverless") {
     const repo = process.env.GITHUB_REPO;
     const token = process.env.GITHUB_TOKEN;
@@ -39,19 +51,35 @@ export function getAdapter(): ContentAdapter {
         "DEPLOYMENT_MODE=serverless requires GITHUB_REPO and GITHUB_TOKEN env vars."
       );
     }
-    cachedAdapter = new GitHubApiAdapter({
+    const { GitHubApiAdapter } = await import("./github");
+    return new GitHubApiAdapter({
       repo,
       token,
       branch: process.env.GITHUB_BRANCH || "main",
       postsPath: process.env.GITHUB_CONTENT_PATH || "content/posts",
       configPath: process.env.GITHUB_SITE_CONFIG_PATH || "content/site.config.json",
     });
-  } else {
-    const contentDir =
-      process.env.CONTENT_DIR || path.join(process.cwd(), "content");
-    cachedAdapter = new LocalGitAdapter(contentDir);
   }
+  const { LocalGitAdapter } = await import("./local-git");
+  const contentDir =
+    process.env.CONTENT_DIR || path.join(process.cwd(), "content");
+  return new LocalGitAdapter(contentDir);
+}
 
+/**
+ * The content adapter for this deployment.
+ *
+ * Still the only place that branches on `DEPLOYMENT_MODE`. It is async
+ * because the adapter module is imported on demand — callers `await` it.
+ */
+export function getAdapter(): Promise<ContentAdapter> {
+  if (!cachedAdapter) {
+    cachedAdapter = createAdapter().catch((err) => {
+      // A failed construction is not cached: the next call tries again.
+      cachedAdapter = null;
+      throw err;
+    });
+  }
   return cachedAdapter;
 }
 
@@ -103,7 +131,8 @@ export function resetListStatus(): void {
  */
 export async function safeListPosts(): Promise<PostMeta[]> {
   try {
-    const posts = await getAdapter().listPosts();
+    const adapter = await getAdapter();
+    const posts = await adapter.listPosts();
     lastListFailure = null;
     return posts;
   } catch (err) {

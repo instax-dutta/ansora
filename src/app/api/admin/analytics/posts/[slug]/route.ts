@@ -151,7 +151,7 @@ export async function GET(
  */
 async function readingMinutesFor(slug: string): Promise<number | null> {
   try {
-    const post = await getAdapter().getPost(slug);
+    const post = await (await getAdapter()).getPost(slug);
     if (!post) return null;
     return readingTimeMinutes(post.content);
   } catch {

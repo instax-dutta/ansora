@@ -20,7 +20,7 @@ export const dynamicParams = true;
 /** Build-time SSG for self-hosted builds; ISR-on-demand for serverless. */
 export async function generateStaticParams() {
   if (process.env.DEPLOYMENT_MODE === "serverless") return [];
-  const posts = await getAdapter().listPosts();
+  const posts = await (await getAdapter()).listPosts();
   return posts.filter((p) => p.published).map((p) => ({ slug: p.slug }));
 }
 
@@ -30,7 +30,7 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const post = await getAdapter().getPost(slug);
+  const post = await (await getAdapter()).getPost(slug);
   // Drafts and missing posts are indistinguishable to the public site.
   if (!post || !post.meta.published) return { title: "Post not found" };
 
@@ -114,8 +114,9 @@ export default async function BlogPostPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
+  const adapter = await getAdapter();
   const [post, config, allPosts] = await Promise.all([
-    getAdapter().getPost(slug),
+    adapter.getPost(slug),
     getSiteConfig(),
     safeListPosts(),
   ]);

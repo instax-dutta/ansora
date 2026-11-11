@@ -7,11 +7,10 @@ export const dynamic = "force-dynamic";
 export default async function NewPostPage() {
   // The editor needs the site config for the live SERP/social previews, and the
   // published set for the cross-post cannibalization check.
+  const adapter = await getAdapter();
   const [config, siblings] = await Promise.all([
     getSiteConfig(),
-    getAdapter()
-      .listPosts()
-      .catch(() => safeListPosts()),
+    adapter.listPosts().catch(() => safeListPosts()),
   ]);
   return (
     <PostEditor

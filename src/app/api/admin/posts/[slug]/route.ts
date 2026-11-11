@@ -42,7 +42,7 @@ export async function PUT(
     const slug = deriveSlug(meta, currentSlug);
     await assertSlugFree(slug, currentSlug);
 
-    const existing = await getAdapter().getPost(currentSlug);
+    const existing = await (await getAdapter()).getPost(currentSlug);
     const merged = { ...meta, slug };
 
     // No-op saves (e.g. clicking Save with nothing changed) must not create a
@@ -58,11 +58,11 @@ export async function PUT(
       merged.updated = existing.meta.updated;
     }
 
-    await getAdapter().savePost(slug, body, merged);
+    await (await getAdapter()).savePost(slug, body, merged);
 
     // Renames: remove the old file so the slug change is a true move.
     if (slug !== currentSlug && existing) {
-      await getAdapter().deletePost(currentSlug);
+      await (await getAdapter()).deletePost(currentSlug);
     }
 
     revalidatePublicSurfaces();
@@ -100,7 +100,7 @@ export async function PATCH(
     const body = await request.json();
     const published = Boolean(body?.published);
 
-    const post = await getAdapter().getPost(slug);
+    const post = await (await getAdapter()).getPost(slug);
     if (!post) {
       return NextResponse.json({ error: "Post not found." }, { status: 404 });
     }
@@ -122,7 +122,7 @@ export async function PATCH(
       merged.updated = new Date().toISOString();
     }
 
-    await getAdapter().savePost(slug, post.content, merged);
+    await (await getAdapter()).savePost(slug, post.content, merged);
     revalidatePublicSurfaces();
     return NextResponse.json({ ok: true, meta: merged });
   } catch (err) {
@@ -151,7 +151,7 @@ export async function DELETE(
   try {
     const { slug } = await params;
     requireSafeSlug(slug);
-    await getAdapter().deletePost(slug);
+    await (await getAdapter()).deletePost(slug);
     revalidatePublicSurfaces();
     return NextResponse.json({ ok: true });
   } catch (err) {

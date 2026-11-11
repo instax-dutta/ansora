@@ -4,7 +4,7 @@
 All non-UI logic: content adapters, auth, markdown pipeline, SEO/AEO scoring, entity graph, machine-readable output, theming, site config, shared utils.
 
 ## Ownership
-- `content/` — ContentAdapter pattern → see `content/AGENTS.md`
+- `content/` — ContentAdapter pattern → see `content/AGENTS.md` (`getAdapter()` is async and loads only the adapter this deployment uses)
 - `markdown/` — shared pipeline + SEO/AEO scorers + cross-post overlap → see `markdown/AGENTS.md`
 - `auth/session.ts` — JWT (jose) + bcrypt credentials + login rate limiting (single file)
 - `theme.ts` — theme "voices" (8 curated typographic identities, some dual-mode, some dark-only) + per-preset faces (density/body/display/chrome/stroke) + `buildThemeCss`

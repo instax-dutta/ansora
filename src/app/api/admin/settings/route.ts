@@ -23,7 +23,7 @@ export async function PUT(request: NextRequest) {
         { status: 400 }
       );
     }
-    await getAdapter().saveSiteConfig(parsed.data);
+    await (await getAdapter()).saveSiteConfig(parsed.data);
     revalidatePublicSurfaces();
     return NextResponse.json({ ok: true, config: parsed.data });
   } catch (err) {

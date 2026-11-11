@@ -26,7 +26,7 @@ export async function getSiteConfig(): Promise<SiteConfig> {
   const now = Date.now();
   if (cached && now - cachedAt < TTL_MS) return cached;
   try {
-    cached = await getAdapter().getSiteConfig();
+    cached = await (await getAdapter()).getSiteConfig();
   } catch (err) {
     // Degrade gracefully: if the content adapter is unreachable (e.g. a
     // serverless build without GITHUB_REPO/GITHUB_TOKEN while prerendering,

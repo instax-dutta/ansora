@@ -21,7 +21,7 @@ const listPosts = cache(safeListPosts);
 
 export async function generateStaticParams() {
   if (process.env.DEPLOYMENT_MODE === "serverless") return [];
-  const posts = await getAdapter().listPosts();
+  const posts = await (await getAdapter()).listPosts();
   const slugs = new Set(
     posts
       .filter((p) => p.published)

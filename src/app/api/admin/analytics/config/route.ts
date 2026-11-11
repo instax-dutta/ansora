@@ -39,7 +39,7 @@ export async function PUT(request: NextRequest) {
   }
 
   try {
-    const adapter = getAdapter();
+    const adapter = await getAdapter();
     const current = await adapter.getSiteConfig();
     const next = { ...current, analytics: parsed.data.analytics };
     await adapter.saveSiteConfig(next);

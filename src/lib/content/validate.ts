@@ -95,7 +95,7 @@ export async function assertSlugFree(
   slug: string,
   currentSlug?: string
 ): Promise<void> {
-  const existing = await getAdapter().listPosts();
+  const existing = await (await getAdapter()).listPosts();
   if (existing.some((p) => p.slug === slug && p.slug !== currentSlug)) {
     throw new PayloadError(
       `A post with the slug “${slug}” already exists — pick a different one.`

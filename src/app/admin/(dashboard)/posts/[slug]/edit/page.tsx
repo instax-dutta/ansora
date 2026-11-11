@@ -11,10 +11,11 @@ export default async function EditPostPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
+  const adapter = await getAdapter();
   const [post, config, siblings] = await Promise.all([
-    getAdapter().getPost(slug),
+    adapter.getPost(slug),
     getSiteConfig(),
-    getAdapter().listPosts(),
+    adapter.listPosts(),
   ]);
   if (!post) notFound();
 

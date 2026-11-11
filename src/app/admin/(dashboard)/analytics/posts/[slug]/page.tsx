@@ -27,7 +27,7 @@ export default async function PostPerformancePage({
   const { slug } = await params;
   if (!isSafeSlug(slug)) notFound();
 
-  const adapter = getAdapter();
+  const adapter = await getAdapter();
   const posts = await adapter.listPosts();
   const post = posts.find((entry) => entry.slug === slug && entry.published);
   if (!post) notFound();
