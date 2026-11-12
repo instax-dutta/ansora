@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Figtree, Fraunces, Geist_Mono } from "next/font/google";
+import { Analytics } from "@vercel/analytics/next";
 import { getSiteConfig } from "@/lib/site-config";
 import { withFeeds } from "@/lib/seo/metadata";
 import { buildThemeCss } from "@/lib/theme";
@@ -83,6 +84,7 @@ export default async function RootLayout({
         <style>{themeCss}</style>
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
         {children}
+        <Analytics />
       </body>
     </html>
   );
